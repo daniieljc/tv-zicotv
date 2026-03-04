@@ -1,15 +1,20 @@
 'use client'
 
-import { use } from 'react'
+import { useParams } from 'next/navigation'
 import { TVNavigationProvider } from '@/hooks/use-tv-navigation'
 import { WatchContent } from './watch-content'
 
-interface WatchPageProps {
-  params: Promise<{ id: string }>
-}
+export default function WatchPage() {
+  const params = useParams()
+  const id = params?.id as string
 
-export default function WatchPage({ params }: WatchPageProps) {
-  const { id } = use(params)
+  if (!id) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-black">
+        <span className="text-xl text-white">Cargando...</span>
+      </div>
+    )
+  }
 
   return (
     <TVNavigationProvider>
@@ -18,9 +23,7 @@ export default function WatchPage({ params }: WatchPageProps) {
   )
 }
 
-// Required for static export with dynamic routes
+// Generate empty params - pages will be rendered client-side
 export function generateStaticParams() {
   return []
 }
-
-export const dynamicParams = true
