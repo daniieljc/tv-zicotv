@@ -49,17 +49,10 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-secondary">
-        <ProxyImage
-          src={event.thumbnail_url}
-          alt={event.title}
-          className="w-full h-full object-cover"
-          fallback={
-            <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
-              <span className="text-8xl opacity-20">
-                {event.sport_category === 'FUTBOL' ? '\u26BD' : '\uD83C\uDFC6'}
-              </span>
-            </div>
-          }
+        <img
+            src={event.thumbnail_url}
+            alt={event.title}
+            className="w-full h-full object-cover"
         />
 
         {/* Gradient Overlay */}
