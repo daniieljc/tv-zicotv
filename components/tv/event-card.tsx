@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { useState } from 'react'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/lib/types'
@@ -15,9 +15,11 @@ interface EventCardProps {
 
 export function EventCard({ event, focusKey, row, col }: EventCardProps) {
   const router = useRouter()
+  const [imgError, setImgError] = useState(false)
+  const [badgeErrors, setBadgeErrors] = useState<Record<string, boolean>>({})
 
   const handleSelect = () => {
-    router.push(`/watch/${event.id}`)
+    router.push(`/watch/?id=${event.id}`)
   }
 
   const { ref, focused } = useFocusable({
@@ -35,16 +37,14 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
   }
 
   // Helper para renderizar los escudos o el fallback
-  const TeamBadge = ({ src, alt }: { src?: string; alt: string }) => (
+  const TeamBadge = ({ src, alt, teamKey }: { src?: string; alt: string; teamKey: string }) => (
       <div className="relative w-10 h-10 flex-shrink-0">
-        {src ? (
-            <Image
+        {src && !badgeErrors[teamKey] ? (
+            <img
                 src={src}
                 alt={alt}
-                fill
-                sizes="40px"
-                className="object-contain"
-                unoptimized // Usamos unoptimized para evitar procesar logos pequeños y saltar CORS
+                className="w-full h-full object-contain"
+                onError={() => setBadgeErrors(prev => ({ ...prev, [teamKey]: true }))}
             />
         ) : (
             <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center">
@@ -69,15 +69,12 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
       >
         {/* Thumbnail Container */}
         <div className="relative aspect-video bg-secondary">
-          {event.thumbnail_url ? (
-              <Image
+          {event.thumbnail_url && !imgError ? (
+              <img
                   src={event.thumbnail_url}
                   alt={event.title}
-                  fill
-                  sizes="420px"
-                  className="object-cover"
-                  priority={row === 1} // Carga prioritaria si es la primera fila
-                  unoptimized
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={() => setImgError(true)}
               />
           ) : (
               <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
@@ -115,7 +112,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
             {event.home_team && event.away_team && event.home_team !== 'Unknown Team' ? (
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <TeamBadge src={event.home_team_badge} alt={event.home_team} />
+                    <TeamBadge src={event.home_team_badge} alt={event.home_team} teamKey="home" />
                     <span className="text-xl font-semibold text-white truncate max-w-[130px]">
                   {event.home_team}
                 </span>
@@ -125,7 +122,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
                 <span className="text-xl font-semibold text-white truncate max-w-[130px]">
                   {event.away_team}
                 </span>
-                    <TeamBadge src={event.away_team_badge} alt={event.away_team} />
+                    <TeamBadge src={event.away_team_badge} alt={event.away_team} teamKey="away" />
                   </div>
                 </div>
             ) : (
@@ -136,7 +133,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
 
             {/* Time / Status */}
             <div className="flex items-center justify-between text-base">
-            <span className="text-white/80 font-bold tabular-nums">
+            <span className="text-white/80 font-bold tabular-nums" suppressHydrationWarning>
               {event.status === 'live' ? 'En directo' : formatTime(event.start_time)}
             </span>
               {event.venue && (
