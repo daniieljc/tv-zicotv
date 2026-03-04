@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/lib/types'
@@ -17,6 +17,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
   const router = useRouter()
   const [imgError, setImgError] = useState(false)
   const [badgeErrors, setBadgeErrors] = useState<Record<string, boolean>>({})
+  const [formattedTime, setFormattedTime] = useState<string>('')
 
   const handleSelect = () => {
     router.push(`/watch/?id=${event.id}`)
@@ -29,12 +30,16 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
     onEnterPress: handleSelect,
   })
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
+  // Format time on client side only to avoid hydration mismatch
+  useEffect(() => {
+    if (event.start_time) {
+      const time = new Date(event.start_time).toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      setFormattedTime(time)
+    }
+  }, [event.start_time])
 
   // Helper to get proxied URL for CORS issues
   const getProxiedUrl = (url: string): string => {
@@ -144,8 +149,8 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
 
             {/* Time / Status */}
             <div className="flex items-center justify-between text-xs lg:text-base">
-            <span className="text-white/80 font-bold tabular-nums" suppressHydrationWarning>
-              {event.status === 'live' ? 'En directo' : formatTime(event.start_time)}
+            <span className="text-white/80 font-bold tabular-nums">
+              {event.status === 'live' ? 'En directo' : formattedTime || '--:--'}
             </span>
               {event.venue && (
                   <span className="text-white/60 truncate max-w-[100px] lg:max-w-[200px] text-xs lg:text-sm">
