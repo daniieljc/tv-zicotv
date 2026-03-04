@@ -136,7 +136,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
 
             {/* Time / Status */}
             <div className="flex items-center justify-between text-base">
-            <span className="text-white/80 font-bold tabular-nums">
+            <span className="text-white/80 font-bold tabular-nums" suppressHydrationWarning>
               {event.status === 'live' ? 'En directo' : formatTime(event.start_time)}
             </span>
               {event.venue && (
