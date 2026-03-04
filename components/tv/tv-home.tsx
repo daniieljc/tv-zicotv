@@ -42,7 +42,7 @@ export function TVHome({ data }: TVHomeProps) {
 
   return (
     <TVNavigationProvider initialFocusKey="hero-watch">
-      <div className="min-h-screen bg-background overflow-y-auto overflow-x-hidden">
+      <div className="bg-background">
         {/* Header */}
         <TVHeader 
           activeTab={activeTab}

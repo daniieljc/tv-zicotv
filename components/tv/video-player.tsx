@@ -12,6 +12,31 @@ interface VideoPlayerProps {
   thumbnail?: string
 }
 
+// Fullscreen helper
+function enterFullscreen(element: HTMLElement) {
+  if (element.requestFullscreen) {
+    element.requestFullscreen()
+  } else if ((element as any).webkitRequestFullscreen) {
+    (element as any).webkitRequestFullscreen()
+  } else if ((element as any).msRequestFullscreen) {
+    (element as any).msRequestFullscreen()
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen()
+  } else if ((document as any).webkitExitFullscreen) {
+    (document as any).webkitExitFullscreen()
+  } else if ((document as any).msExitFullscreen) {
+    (document as any).msExitFullscreen()
+  }
+}
+
+function isFullscreen(): boolean {
+  return !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
+}
+
 interface Stream {
   embedUrl: string
   hd: boolean
@@ -41,6 +66,7 @@ function isDirectStream(url: string): boolean {
 }
 
 export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [activeUrl, setActiveUrl] = useState<string | null>(null)
   const [activeSource, setActiveSource] = useState<'own' | number | null>(null)
@@ -50,8 +76,32 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
   const [resolvedSources, setResolvedSources] = useState<Record<number, Stream[]>>({})
   const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({})
   const [focusedSourceIdx, setFocusedSourceIdx] = useState(0)
+  const [isInFullscreen, setIsInFullscreen] = useState(false)
 
   const totalSources = (ownStream ? 1 : 0) + (fallbackSources?.length || 0)
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return
+    if (isFullscreen()) {
+      exitFullscreen()
+    } else {
+      enterFullscreen(containerRef.current)
+    }
+  }, [])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsInFullscreen(isFullscreen())
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+    }
+  }, [])
 
   // Prefetch fallback sources - using external API directly for static export
   useEffect(() => {
@@ -74,6 +124,13 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
     setHasInteracted(true)
     setPlayerLoading(true)
     setPlayerError(false)
+    
+    // Auto fullscreen on TV (large screens)
+    if (containerRef.current && window.innerWidth >= 1024 && !isFullscreen()) {
+      try {
+        enterFullscreen(containerRef.current)
+      } catch {}
+    }
 
     if (activeSource !== null) {
       setStatus(activeSource === 'own' ? 'own' : String(activeSource), 'idle')
@@ -171,6 +228,9 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
               handleSwitchStream(newIdx)
             }
           }
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault()
+          toggleFullscreen()
         }
       }
     }
@@ -180,7 +240,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
   }, [hasInteracted, focusedSourceIdx, activeSource, activeStreamIdx, totalSources, ownStream, resolvedSources])
 
   return (
-    <div className="absolute inset-0 bg-black">
+    <div ref={containerRef} className="absolute inset-0 bg-black">
       {/* Player Area */}
       {!hasInteracted ? (
         <PlayScreen 
@@ -279,9 +339,28 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
         </div>
       )}
 
+      {/* Fullscreen Button */}
+      {hasInteracted && !playerLoading && !playerError && (
+        <button
+          onClick={toggleFullscreen}
+          className="absolute top-8 right-8 p-3 bg-black/70 hover:bg-black/90 rounded-lg transition-all cursor-pointer"
+          title={isInFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          {isInFullscreen ? (
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          )}
+        </button>
+      )}
+
       {/* Navigation Hint */}
       {hasInteracted && !playerLoading && (
-        <div className="absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground">
+        <div className="absolute bottom-6 right-8 hidden lg:flex items-center gap-6 text-muted-foreground">
           <div className="flex items-center gap-2">
             <kbd className="px-2 py-1 bg-white/10 rounded text-sm">←→</kbd>
             <span className="text-base">Cambiar fuente</span>
@@ -289,6 +368,10 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
           <div className="flex items-center gap-2">
             <kbd className="px-2 py-1 bg-white/10 rounded text-sm">↑↓</kbd>
             <span className="text-base">Cambiar stream</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-white/10 rounded text-sm">F</kbd>
+            <span className="text-base">Pantalla completa</span>
           </div>
         </div>
       )}
