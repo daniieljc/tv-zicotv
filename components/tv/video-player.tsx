@@ -53,11 +53,11 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 
   const totalSources = (ownStream ? 1 : 0) + (fallbackSources?.length || 0)
 
-  // Prefetch fallback sources
+  // Prefetch fallback sources - using external API directly for static export
   useEffect(() => {
     fallbackSources?.slice(0, 3).forEach(async (source, index) => {
       try {
-        const res = await fetch(`/api/streams/${source.source}/${source.id}`)
+        const res = await fetch(`https://zicotv.cc/api/streams/${source.source}/${source.id}`)
         const data = await res.json()
         if (data.available) {
           setResolvedSources(prev => ({ ...prev, [index]: data.streams }))
@@ -91,7 +91,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
         let streams = resolvedSources[type]
         
         if (!streams && fallbackSources?.[type]) {
-          const res = await fetch(`/api/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
+          const res = await fetch(`https://zicotv.cc/api/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
           const data = await res.json()
           streams = data.available ? data.streams : []
           setResolvedSources(prev => ({ ...prev, [type]: streams }))
