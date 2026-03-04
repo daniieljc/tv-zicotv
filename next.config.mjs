@@ -5,18 +5,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'www.thesportsdb.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'r2.thesportsdb.com',
-      },
-    ],
+    unoptimized: true,
   },
   trailingSlash: true,
+  // For Capacitor compatibility
+  assetPrefix: './',
 }
 
 export default nextConfig

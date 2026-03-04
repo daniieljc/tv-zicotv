@@ -19,7 +19,7 @@ export function TVHero({ event }: HeroProps) {
     focusKey: 'hero-watch',
     row: 0,
     col: 0,
-    onEnterPress: () => router.push(`/watch/${event.id}`),
+    onEnterPress: () => router.push(`/watch/?id=${event.id}`),
   })
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export function TVHero({ event }: HeroProps) {
         {/* Watch Button */}
         <button
           ref={ref as React.Ref<HTMLButtonElement>}
-          onClick={() => router.push(`/watch/${event.id}`)}
+          onClick={() => router.push(`/watch/?id=${event.id}`)}
           className={cn(
             'flex items-center gap-5 px-12 py-6 rounded-2xl text-3xl font-bold w-fit',
             'bg-primary text-primary-foreground',
