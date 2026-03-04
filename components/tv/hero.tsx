@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/lib/types'
@@ -12,6 +13,7 @@ interface HeroProps {
 
 export function TVHero({ event }: HeroProps) {
   const router = useRouter()
+  const [formattedTime, setFormattedTime] = useState<string | null>(null)
   
   const { ref, focused } = useFocusable({
     focusKey: 'hero-watch',
@@ -20,24 +22,27 @@ export function TVHero({ event }: HeroProps) {
     onEnterPress: () => router.push(`/watch/${event.id}`),
   })
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('es-ES', {
+  useEffect(() => {
+    const time = new Date(event.start_time).toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
+    setFormattedTime(time)
+  }, [event.start_time])
 
   return (
     <section className="relative h-[600px] w-full overflow-hidden">
       {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ 
-          backgroundImage: event.thumbnail_url 
-            ? `url(${event.thumbnail_url})` 
-            : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-        }}
-      >
+      <div className="absolute inset-0 bg-cover bg-center">
+        {event.thumbnail_url ? (
+          <ProxyImage
+            src={event.thumbnail_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#16213e]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
       </div>
@@ -105,7 +110,7 @@ export function TVHero({ event }: HeroProps) {
           <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
-          {event.status === 'live' ? 'VER AHORA' : `VER A LAS ${formatTime(event.start_time)}`}
+          {event.status === 'live' ? 'VER AHORA' : formattedTime ? `VER A LAS ${formattedTime}` : 'VER'}
         </button>
       </div>
     </section>
