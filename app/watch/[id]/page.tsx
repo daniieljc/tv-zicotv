@@ -22,8 +22,3 @@ export default function WatchPage() {
     </TVNavigationProvider>
   )
 }
-
-// Generate empty params - pages will be rendered client-side
-export function generateStaticParams() {
-  return []
-}
