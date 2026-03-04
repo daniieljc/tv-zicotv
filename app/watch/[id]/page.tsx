@@ -1,19 +1,29 @@
+'use client'
+
+import { useParams } from 'next/navigation'
 import { TVNavigationProvider } from '@/hooks/use-tv-navigation'
 import { WatchContent } from './watch-content'
-import { fetchEvent } from '@/lib/api'
 
-interface WatchPageProps {
-  params: Promise<{ id: string }>
-}
+export default function WatchPage() {
+  const params = useParams()
+  const id = params?.id as string
 
-export default async function WatchPage({ params }: WatchPageProps) {
-  const { id } = await params
-  
-  const data = await fetchEvent(parseInt(id))
+  if (!id) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-black">
+        <span className="text-xl text-white">Cargando...</span>
+      </div>
+    )
+  }
 
   return (
     <TVNavigationProvider>
-      <WatchContent data={data} />
+      <WatchContent eventId={id} />
     </TVNavigationProvider>
   )
+}
+
+// Generate empty params - pages will be rendered client-side
+export function generateStaticParams() {
+  return []
 }
