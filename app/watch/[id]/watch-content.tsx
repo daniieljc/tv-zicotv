@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { VideoPlayer } from '@/components/tv/video-player'
@@ -9,12 +9,60 @@ import { cn } from '@/lib/utils'
 import type { EventDetailResponse } from '@/lib/types'
 
 interface WatchContentProps {
-  data: EventDetailResponse
+  eventId: string
 }
 
-export function WatchContent({ data }: WatchContentProps) {
+export function WatchContent({ eventId }: WatchContentProps) {
   const router = useRouter()
   const [showInfo, setShowInfo] = useState(true)
+  const [data, setData] = useState<EventDetailResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadEvent() {
+      try {
+        const res = await fetch(`https://zicotv.cc/api/events/${eventId}`)
+        if (!res.ok) throw new Error('Error al cargar el evento')
+        const eventData = await res.json()
+        setData(eventData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadEvent()
+  }, [eventId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-xl text-white">Cargando...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-black">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="text-6xl">⚠️</span>
+          <span className="text-2xl text-white">{error || 'Evento no encontrado'}</span>
+          <button 
+            onClick={() => router.push('/')}
+            className="mt-4 px-6 py-3 bg-primary text-white rounded-lg font-medium"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const { event, own_stream, fallback_sources } = data
 
   const formatTime = (dateString: string) => {
