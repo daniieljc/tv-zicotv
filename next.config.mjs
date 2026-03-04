@@ -5,7 +5,17 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized_images: false,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.thesportsdb.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'r2.thesportsdb.com',
+      },
+    ],
   },
 }
 

@@ -1,10 +1,10 @@
 'use client'
 
+import Image from 'next/image'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/lib/types'
 import { useRouter } from 'next/navigation'
-import { ProxyImage } from './proxy-image'
 
 interface EventCardProps {
   event: Event
@@ -15,11 +15,11 @@ interface EventCardProps {
 
 export function EventCard({ event, focusKey, row, col }: EventCardProps) {
   const router = useRouter()
-  
+
   const handleSelect = () => {
     router.push(`/watch/${event.id}`)
   }
-  
+
   const { ref, focused } = useFocusable({
     focusKey,
     row,
@@ -34,106 +34,119 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
     })
   }
 
+  // Helper para renderizar los escudos o el fallback
+  const TeamBadge = ({ src, alt }: { src?: string; alt: string }) => (
+      <div className="relative w-10 h-10 flex-shrink-0">
+        {src ? (
+            <Image
+                src={src}
+                alt={alt}
+                fill
+                sizes="40px"
+                className="object-contain"
+                unoptimized // Usamos unoptimized para evitar procesar logos pequeños y saltar CORS
+            />
+        ) : (
+            <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-white">{alt.charAt(0)}</span>
+            </div>
+        )}
+      </div>
+  )
+
   return (
-    <div
-      ref={ref as React.Ref<HTMLDivElement>}
-      className={cn(
-        'relative flex-shrink-0 w-[420px] rounded-2xl overflow-hidden cursor-pointer',
-        'transition-all duration-300 ease-out outline-none',
-        'border-4 border-transparent',
-        focused && 'scale-110 z-20 border-primary shadow-[0_0_60px_rgba(239,68,68,0.5)]',
-        !focused && 'opacity-70'
-      )}
-      tabIndex={-1}
-      onClick={handleSelect}
-    >
-      {/* Thumbnail */}
-      <div className="relative aspect-video bg-secondary">
-        <img
-            src={event.thumbnail_url}
-            alt={event.title}
-            className="w-full h-full object-cover"
-        />
+      <div
+          ref={ref as React.Ref<HTMLDivElement>}
+          className={cn(
+              'relative flex-shrink-0 w-[420px] rounded-2xl overflow-hidden cursor-pointer',
+              'transition-all duration-300 ease-out outline-none',
+              'border-4 border-transparent',
+              focused && 'scale-110 z-20 border-primary shadow-[0_0_60px_rgba(239,68,68,0.5)]',
+              !focused && 'opacity-70'
+          )}
+          tabIndex={-1}
+          onClick={handleSelect}
+      >
+        {/* Thumbnail Container */}
+        <div className="relative aspect-video bg-secondary">
+          {event.thumbnail_url ? (
+              <Image
+                  src={event.thumbnail_url}
+                  alt={event.title}
+                  fill
+                  sizes="420px"
+                  className="object-cover"
+                  priority={row === 1} // Carga prioritaria si es la primera fila
+                  unoptimized
+              />
+          ) : (
+              <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
+            <span className="text-8xl opacity-20">
+              {event.sport_category === 'FUTBOL' ? '\u26BD' : '\uD83C\uDFC6'}
+            </span>
+              </div>
+          )}
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
 
-        {/* Live Badge */}
-        {event.status === 'live' && (
-          <div className="absolute top-5 left-5 flex items-center gap-3 px-4 py-2 bg-primary rounded-lg">
+          {/* Live Badge */}
+          {event.status === 'live' && (
+              <div className="absolute top-5 left-5 flex items-center gap-3 px-4 py-2 bg-primary rounded-lg z-10">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
             </span>
-            <span className="text-base font-extrabold text-white uppercase tracking-widest">Live</span>
-          </div>
-        )}
+                <span className="text-base font-extrabold text-white uppercase tracking-widest">Live</span>
+              </div>
+          )}
 
-        {/* Stream Available */}
-        {event.has_stream && (
-          <div className="absolute top-5 right-5 p-3 bg-black/70 rounded-full">
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        )}
+          {/* Stream Available */}
+          {event.has_stream && (
+              <div className="absolute top-5 right-5 p-3 bg-black/70 rounded-full z-10">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+          )}
 
-        {/* Content Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          {/* Teams or Title */}
-          {event.home_team && event.away_team && event.home_team !== 'Unknown Team' && event.away_team !== 'Unknown Team' ? (
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <ProxyImage 
-                  src={event.home_team_badge} 
-                  alt="" 
-                  className="w-10 h-10 object-contain"
-                  fallback={
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">{event.home_team?.charAt(0)}</span>
-                    </div>
-                  }
-                />
-                <span className="text-xl font-semibold text-white truncate max-w-[130px]">
+          {/* Content Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+            {event.home_team && event.away_team && event.home_team !== 'Unknown Team' ? (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <TeamBadge src={event.home_team_badge} alt={event.home_team} />
+                    <span className="text-xl font-semibold text-white truncate max-w-[130px]">
                   {event.home_team}
                 </span>
-              </div>
-              <span className="text-xl font-extrabold text-primary mx-3">VS</span>
-              <div className="flex items-center gap-3">
+                  </div>
+                  <span className="text-xl font-extrabold text-primary mx-3">VS</span>
+                  <div className="flex items-center gap-3">
                 <span className="text-xl font-semibold text-white truncate max-w-[130px]">
                   {event.away_team}
                 </span>
-                <ProxyImage 
-                  src={event.away_team_badge} 
-                  alt="" 
-                  className="w-10 h-10 object-contain"
-                  fallback={
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">{event.away_team?.charAt(0)}</span>
-                    </div>
-                  }
-                />
-              </div>
-            </div>
-          ) : (
-            <h3 className="text-xl font-semibold text-white mb-3 truncate leading-relaxed">
-              {event.title}
-            </h3>
-          )}
+                    <TeamBadge src={event.away_team_badge} alt={event.away_team} />
+                  </div>
+                </div>
+            ) : (
+                <h3 className="text-xl font-semibold text-white mb-3 truncate leading-relaxed">
+                  {event.title}
+                </h3>
+            )}
 
-          {/* Time / Status */}
-          <div className="flex items-center justify-between text-base">
+            {/* Time / Status */}
+            <div className="flex items-center justify-between text-base">
             <span className="text-white/80 font-bold tabular-nums">
               {event.status === 'live' ? 'En directo' : formatTime(event.start_time)}
             </span>
-            {event.venue && (
-              <span className="text-white/60 truncate max-w-[200px] text-sm">
+              {event.venue && (
+                  <span className="text-white/60 truncate max-w-[200px] text-sm">
                 {event.venue}
               </span>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
   )
 }
