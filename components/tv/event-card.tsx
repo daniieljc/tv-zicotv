@@ -36,14 +36,22 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
     })
   }
 
+  // Helper to get proxied URL for CORS issues
+  const getProxiedUrl = (url: string): string => {
+    if (url.startsWith('data:') || url.startsWith('/')) return url
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&default=placeholder`
+  }
+
   // Helper para renderizar los escudos o el fallback
   const TeamBadge = ({ src, alt, teamKey }: { src?: string; alt: string; teamKey: string }) => (
       <div className="relative w-6 h-6 lg:w-10 lg:h-10 flex-shrink-0">
         {src && !badgeErrors[teamKey] ? (
             <img
-                src={src}
+                src={getProxiedUrl(src)}
                 alt={alt}
                 className="w-full h-full object-contain"
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
                 onError={() => setBadgeErrors(prev => ({ ...prev, [teamKey]: true }))}
             />
         ) : (
@@ -72,9 +80,11 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
         <div className="relative aspect-video bg-secondary">
           {event.thumbnail_url && !imgError ? (
               <img
-                  src={event.thumbnail_url}
+                  src={getProxiedUrl(event.thumbnail_url)}
                   alt={event.title}
                   className="absolute inset-0 w-full h-full object-cover"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
                   onError={() => setImgError(true)}
               />
           ) : (
