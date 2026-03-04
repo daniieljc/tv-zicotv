@@ -30,14 +30,16 @@ export function TVHero({ event }: HeroProps) {
   return (
     <section className="relative h-[600px] w-full overflow-hidden">
       {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ 
-          backgroundImage: event.thumbnail_url 
-            ? `url(${event.thumbnail_url})` 
-            : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-        }}
-      >
+      <div className="absolute inset-0 bg-cover bg-center">
+        {event.thumbnail_url ? (
+          <ProxyImage
+            src={event.thumbnail_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] to-[#16213e]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
       </div>
