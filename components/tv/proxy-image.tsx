@@ -18,12 +18,10 @@ export function ProxyImage({ src, alt, className, fallback }: ProxyImageProps) {
 
   // Check if the image needs proxying (external images that may have CORS issues)
   // Using external proxy for static export compatibility
-  const needsProxy = src.includes('thesportsdb.com') || src.includes('r2.thesportsdb.com')
-  const imageSrc = needsProxy ? `https://zicotv.cc/api/image-proxy?url=${encodeURIComponent(src)}` : src
 
   return (
     <img
-      src={imageSrc}
+      src={src}
       alt={alt}
       className={className}
       onError={() => setError(true)}
