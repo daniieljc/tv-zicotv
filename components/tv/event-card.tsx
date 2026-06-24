@@ -148,15 +148,22 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
             )}
 
             {/* Time / Status */}
-            <div className="flex items-center justify-between text-xs lg:text-base">
-            <span className="text-white/80 font-bold tabular-nums">
-              {event.status === 'live' ? 'En directo' : formattedTime || '--:--'}
-            </span>
-              {event.venue && (
-                  <span className="text-white/60 truncate max-w-[100px] lg:max-w-[200px] text-xs lg:text-sm">
-                {event.venue}
+            <div className="flex items-center justify-between gap-2 text-xs lg:text-base">
+              <span className="font-bold tabular-nums text-white/80">
+                {event.status === 'live' ? 'En directo' : formattedTime || '--:--'}
               </span>
-              )}
+              {event.viewers && event.viewers > 0 ? (
+                <span className="flex flex-shrink-0 items-center gap-1 font-bold tabular-nums text-primary">
+                  <svg className="h-3.5 w-3.5 lg:h-4 lg:w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12a4.5 4.5 0 110-9 4.5 4.5 0 010 9zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" />
+                  </svg>
+                  {event.viewers.toLocaleString('es-ES')}
+                </span>
+              ) : event.venue ? (
+                <span className="max-w-[100px] truncate text-xs text-white/60 lg:max-w-[200px] lg:text-sm">
+                  {event.venue}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

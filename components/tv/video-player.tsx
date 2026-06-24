@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   ownStream: OwnStream | null
   fallbackSources: FallbackSource[]
   thumbnail?: string
+  chromeVisible?: boolean
 }
 
 interface Stream {
@@ -40,7 +41,7 @@ function isDirectStream(url: string): boolean {
   return /\.(m3u8|mp4|webm|ogg|ts)(\?.*)?$/i.test(url) || url.includes('/proxy?url=')
 }
 
-export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlayerProps) {
+export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisible = true }: VideoPlayerProps) {
   const [hasInteracted, setHasInteracted] = useState(false)
   const [activeUrl, setActiveUrl] = useState<string | null>(null)
   const [activeSource, setActiveSource] = useState<'own' | number | null>(null)
@@ -53,17 +54,14 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 
   const totalSources = (ownStream ? 1 : 0) + (fallbackSources?.length || 0)
 
-  // Prefetch fallback sources - using external API directly for static export
+  // v1 ya trae los streams resueltos dentro de cada fuente, así que los sembramos
+  // directamente (sin pedir /api/streams aparte).
   useEffect(() => {
-    fallbackSources?.slice(0, 3).forEach(async (source, index) => {
-      try {
-        const res = await fetch(`https://zicotv.cc/api/streams/${source.source}/${source.id}`)
-        const data = await res.json()
-        if (data.available) {
-          setResolvedSources(prev => ({ ...prev, [index]: data.streams }))
-        }
-      } catch {}
+    const seed: Record<number, Stream[]> = {}
+    fallbackSources?.forEach((s, i) => {
+      if (s.streams?.length) seed[i] = s.streams
     })
+    if (Object.keys(seed).length) setResolvedSources(seed)
   }, [fallbackSources])
 
   const setStatus = useCallback((key: string, status: SourceStatus) => {
@@ -89,11 +87,17 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
       } else if (typeof type === 'number') {
         setStatus(String(type), 'loading')
         let streams = resolvedSources[type]
-        
-        if (!streams && fallbackSources?.[type]) {
-          const res = await fetch(`https://zicotv.cc/api/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
-          const data = await res.json()
-          streams = data.available ? data.streams : []
+
+        if (!streams?.length && fallbackSources?.[type]) {
+          // Preferimos los streams inline de v1; si no hubiera, resolvemos por API.
+          const inline = fallbackSources[type].streams
+          if (inline?.length) {
+            streams = inline
+          } else {
+            const res = await fetch(`https://zicotv.cc/api/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
+            const data = await res.json()
+            streams = data.available ? data.streams : []
+          }
           setResolvedSources(prev => ({ ...prev, [type]: streams }))
         }
 
@@ -207,7 +211,10 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 
       {/* Source Selector - shown when interacted */}
       {hasInteracted && !playerLoading && !playerError && (
-        <div className="absolute bottom-32 left-8 right-8">
+        <div className={cn(
+          'absolute bottom-32 left-8 right-8 transition-opacity duration-300',
+          !chromeVisible && 'opacity-0 pointer-events-none'
+        )}>
           <div className="text-lg font-bold text-white/60 uppercase tracking-widest mb-4">
             Fuentes disponibles
           </div>
@@ -258,7 +265,10 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 
       {/* Source Info Overlay */}
       {hasInteracted && activeUrl && !playerLoading && (
-        <div className="absolute top-8 left-8 flex items-center gap-4">
+        <div className={cn(
+          'absolute top-8 left-8 flex items-center gap-4 transition-opacity duration-300',
+          !chromeVisible && 'opacity-0 pointer-events-none'
+        )}>
           <div className="flex items-center gap-2 px-4 py-2 bg-black/80 rounded-lg">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -281,7 +291,10 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 
       {/* Navigation Hint */}
       {hasInteracted && !playerLoading && (
-        <div className="absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground">
+        <div className={cn(
+          'absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground transition-opacity duration-300',
+          !chromeVisible && 'opacity-0 pointer-events-none'
+        )}>
           <div className="flex items-center gap-2">
             <kbd className="px-2 py-1 bg-white/10 rounded text-sm">←→</kbd>
             <span className="text-base">Cambiar fuente</span>
@@ -297,7 +310,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail }: VideoPlay
 }
 
 function PlayScreen({ thumbnail, totalSources, onPlay }: { thumbnail?: string; totalSources: number; onPlay: () => void }) {
-  const { ref, isFocused } = useFocusable('play-btn', 0, 0, onPlay)
+  const { ref, focused } = useFocusable({ focusKey: 'play-btn', row: 0, col: 0 })
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -312,7 +325,7 @@ function PlayScreen({ thumbnail, totalSources, onPlay }: { thumbnail?: string; t
           className={cn(
             'w-24 h-24 rounded-full bg-primary flex items-center justify-center',
             'transition-all duration-200',
-            isFocused && 'scale-110 shadow-[0_0_60px_rgba(230,34,34,0.6)]'
+            focused && 'scale-110 shadow-[0_0_60px_rgba(230,34,34,0.6)]'
           )}
         >
           <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -342,7 +355,7 @@ function LoadingScreen() {
 }
 
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
-  const { ref, isFocused } = useFocusable('retry-btn', 0, 0, onRetry)
+  const { ref, focused } = useFocusable({ focusKey: 'retry-btn', row: 0, col: 0, onEnterPress: onRetry })
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4">
@@ -357,7 +370,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
         className={cn(
           'mt-4 px-8 py-3 rounded-full bg-primary text-white font-bold uppercase tracking-wide',
           'transition-all duration-200',
-          isFocused && 'scale-105 shadow-[0_0_40px_rgba(230,34,34,0.6)]'
+          focused && 'scale-105 shadow-[0_0_40px_rgba(230,34,34,0.6)]'
         )}
       >
         Volver

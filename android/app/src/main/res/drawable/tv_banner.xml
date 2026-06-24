@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Banner de Android TV (320x180). Lo usa el lanzador del televisor para mostrar la
+  app en la home. Vector con la marca ZicoTV (fondo oscuro + badge con play).
+  Para una versión más pulida, sustitúyelo por un PNG 320x180.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <path
+        android:fillColor="#0B0D0C"
+        android:pathData="M0,0 H320 V180 H0 Z" />
+
+    <!-- Badge (logo) -->
+    <path
+        android:fillColor="#E62222"
+        android:pathData="M44,58 h64 v64 h-64 z" />
+
+    <!-- Play dentro del badge -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,76 L66,104 L94,90 Z" />
+
+    <!-- Barra de acento (zona del wordmark) -->
+    <path
+        android:fillColor="#E62222"
+        android:pathData="M128,84 h148 v12 h-148 z" />
+    <path
+        android:fillColor="#4A1414"
+        android:pathData="M128,104 h96 v8 h-96 z" />
+</vector>

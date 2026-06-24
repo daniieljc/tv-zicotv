@@ -18,7 +18,7 @@ function WatchPageContent() {
   }
 
   return (
-    <TVNavigationProvider>
+    <TVNavigationProvider initialFocusKey="play-btn">
       <WatchContent eventId={id} />
     </TVNavigationProvider>
   )

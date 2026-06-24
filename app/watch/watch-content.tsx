@@ -6,6 +6,7 @@ import { useFocusable } from '@/hooks/use-tv-navigation'
 import { VideoPlayer } from '@/components/tv/video-player'
 import { ProxyImage } from '@/components/tv/proxy-image'
 import { cn } from '@/lib/utils'
+import { fetchEvent } from '@/lib/api'
 import type { EventDetailResponse } from '@/lib/types'
 
 interface WatchContentProps {
@@ -15,6 +16,7 @@ interface WatchContentProps {
 export function WatchContent({ eventId }: WatchContentProps) {
   const router = useRouter()
   const [showInfo, setShowInfo] = useState(true)
+  const [chromeVisible, setChromeVisible] = useState(true)
   const [data, setData] = useState<EventDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,9 +24,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
   useEffect(() => {
     async function loadEvent() {
       try {
-        const res = await fetch(`https://zicotv.cc/api/events/${eventId}`)
-        if (!res.ok) throw new Error('Error al cargar el evento')
-        const eventData = await res.json()
+        const eventData = await fetchEvent(Number(eventId))
         setData(eventData)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -34,6 +34,30 @@ export function WatchContent({ eventId }: WatchContentProps) {
     }
     loadEvent()
   }, [eventId])
+
+  // Auto-oculta toda la interfaz (ficha + controles) tras unos segundos de
+  // inactividad para que no tape el partido. Cualquier tecla del mando (o el
+  // ratón) la vuelve a mostrar; la tecla "I" alterna la ficha del evento.
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout>
+    const reveal = () => {
+      setChromeVisible(true)
+      clearTimeout(hideTimer)
+      hideTimer = setTimeout(() => setChromeVisible(false), 4000)
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'i' || e.key === 'I') setShowInfo(prev => !prev)
+      reveal()
+    }
+    window.addEventListener('keydown', handleKey)
+    window.addEventListener('mousemove', reveal)
+    reveal()
+    return () => {
+      clearTimeout(hideTimer)
+      window.removeEventListener('keydown', handleKey)
+      window.removeEventListener('mousemove', reveal)
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -83,18 +107,24 @@ export function WatchContent({ eventId }: WatchContentProps) {
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
       {/* Video Player */}
-      <VideoPlayer 
-        ownStream={own_stream} 
+      <VideoPlayer
+        ownStream={own_stream}
         fallbackSources={fallback_sources}
         thumbnail={event.thumbnail_url}
+        chromeVisible={chromeVisible}
       />
 
       {/* Back Button */}
-      <BackButton onBack={() => router.push('/')} />
+      <div className={cn('transition-opacity duration-300', !chromeVisible && 'opacity-0 pointer-events-none')}>
+        <BackButton onBack={() => router.push('/')} />
+      </div>
 
       {/* Event Info Overlay */}
       {showInfo && (
-        <div className="absolute top-0 left-0 right-0 p-8 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+        <div className={cn(
+          'absolute top-0 left-0 right-0 p-8 bg-gradient-to-b from-black/90 via-black/50 to-transparent transition-opacity duration-300',
+          !chromeVisible && 'opacity-0 pointer-events-none'
+        )}>
           <div className="flex items-start justify-between">
             <div>
               {/* Live Badge */}
@@ -181,7 +211,10 @@ export function WatchContent({ eventId }: WatchContentProps) {
       )}
 
       {/* Controls Hint */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl backdrop-blur-sm">
+      <div className={cn(
+        'absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl backdrop-blur-sm transition-opacity duration-300',
+        !chromeVisible && 'opacity-0 pointer-events-none'
+      )}>
         <div className="flex items-center gap-3 text-muted-foreground">
           <kbd className="px-3 py-1.5 bg-muted rounded text-base font-medium">ESC</kbd>
           <span className="text-lg">Volver</span>
@@ -205,7 +238,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
-  const { ref, isFocused } = useFocusable('back-btn', 0, 0, onBack)
+  const { ref, focused } = useFocusable({ focusKey: 'back-btn', row: 0, col: 0, onEnterPress: onBack })
 
   return (
     <button
@@ -215,7 +248,7 @@ function BackButton({ onBack }: { onBack: () => void }) {
         'absolute top-8 left-8 flex items-center gap-3 px-5 py-3 rounded-xl z-50',
         'bg-black/70 backdrop-blur-sm transition-all duration-200',
         'border-2 border-transparent outline-none',
-        isFocused && 'border-primary scale-105 shadow-[0_0_30px_rgba(239,68,68,0.5)]'
+        focused && 'border-primary scale-105 shadow-[0_0_30px_rgba(239,68,68,0.5)]'
       )}
     >
       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
