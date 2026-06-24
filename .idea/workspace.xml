@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="5f6fbe76-718d-4ae0-b368-88fb12ebd020" name="Changes" comment="fix: remove proxying for images in ProxyImage component and use original source">
-      <change afterPath="$PROJECT_DIR$/img.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/watch/watch-content.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/watch/watch-content.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/tv/event-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/tv/event-card.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/tv/header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/tv/header.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/tv/tv-home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/tv/tv-home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/tv/video-player.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/tv/video-player.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
-    </list>
+    <list default="true" id="5f6fbe76-718d-4ae0-b368-88fb12ebd020" name="Changes" comment="fix: remove proxying for images in ProxyImage component and use original source" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -113,7 +101,7 @@
       <workItem from="1781859405760" duration="63000" />
       <workItem from="1782048009887" duration="1864000" />
       <workItem from="1782111598387" duration="8000" />
-      <workItem from="1782293849048" duration="344000" />
+      <workItem from="1782293849048" duration="671000" />
     </task>
     <task id="LOCAL-00001" summary="add initial project setup with utility functions, components, and configuration files">
       <option name="closed" value="true" />
@@ -155,7 +143,15 @@
       <option name="project" value="LOCAL" />
       <updated>1772623739656</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="fix: remove proxying for images in ProxyImage component and use original source">
+      <option name="closed" value="true" />
+      <created>1782294519690</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1782294519690</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
