@@ -126,23 +126,25 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
           {/* Content Overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-6 z-10">
             {event.home_team && event.away_team && event.home_team !== 'Unknown Team' ? (
-                <div className="flex items-center justify-between mb-2 lg:mb-3">
-                  <div className="flex items-center gap-2 lg:gap-3">
+                // Cada equipo ocupa su mitad y el nombre puede ir en 2 líneas: con
+                // un ancho máximo fijo los nombres largos se cortaban con "…".
+                <div className="flex items-center gap-2 mb-2 lg:mb-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
                     <TeamBadge src={event.home_team_badge ?? undefined} alt={event.home_team ?? undefined} teamKey="home" />
-                    <span className="text-sm lg:text-xl font-semibold text-white truncate max-w-[80px] lg:max-w-[130px]">
-                  {event.home_team}
-                </span>
+                    <span className="line-clamp-2 min-w-0 break-words text-sm lg:text-lg font-semibold leading-tight text-white">
+                      {event.home_team}
+                    </span>
                   </div>
-                  <span className="text-sm lg:text-xl font-extrabold text-primary mx-2 lg:mx-3">VS</span>
-                  <div className="flex items-center gap-2 lg:gap-3">
-                <span className="text-sm lg:text-xl font-semibold text-white truncate max-w-[80px] lg:max-w-[130px]">
-                  {event.away_team}
-                </span>
+                  <span className="shrink-0 text-sm lg:text-lg font-extrabold text-primary">VS</span>
+                  <div className="flex min-w-0 flex-1 items-center justify-end gap-2 lg:gap-3">
+                    <span className="line-clamp-2 min-w-0 break-words text-right text-sm lg:text-lg font-semibold leading-tight text-white">
+                      {event.away_team}
+                    </span>
                     <TeamBadge src={event.away_team_badge ?? undefined} alt={event.away_team ?? undefined} teamKey="away" />
                   </div>
                 </div>
             ) : (
-                <h3 className="text-sm lg:text-xl font-semibold text-white mb-2 lg:mb-3 truncate leading-relaxed">
+                <h3 className="text-sm lg:text-xl font-semibold text-white mb-2 lg:mb-3 line-clamp-2 break-words leading-tight">
                   {event.title}
                 </h3>
             )}
