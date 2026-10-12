@@ -15,7 +15,7 @@ export interface VersionInfo {
   download_short: string
 }
 
-export type UpdateState = { kind: 'none' } | { kind: 'optional' | 'required'; info: VersionInfo }
+export type UpdateState = { kind: 'none' } | { kind: 'optional' | 'required'; info: VersionInfo; current: string }
 
 export async function checkForUpdate(): Promise<UpdateState> {
   if (!Capacitor.isNativePlatform()) return { kind: 'none' }
@@ -27,8 +27,8 @@ export async function checkForUpdate(): Promise<UpdateState> {
     if (!res.ok) return { kind: 'none' }
     const info: VersionInfo = await res.json()
     const current = parseInt(appInfo.build, 10) || 0
-    if (info.min_version_code > 0 && current < info.min_version_code) return { kind: 'required', info }
-    if (info.latest_version_code > current) return { kind: 'optional', info }
+    if (info.min_version_code > 0 && current < info.min_version_code) return { kind: 'required', info, current: appInfo.version }
+    if (info.latest_version_code > current) return { kind: 'optional', info, current: appInfo.version }
   } catch {
     /* sin conexión: no molestamos */
   }
@@ -36,7 +36,7 @@ export async function checkForUpdate(): Promise<UpdateState> {
 }
 
 /** versionName de android/app/build.gradle (respaldo fuera del APK). Mantener en sync. */
-export const APP_VERSION = '1.2.0'
+export const APP_VERSION = '1.2.1'
 
 /** Versión visible de la app ("v1.2.0"): la del APK instalado si es nativo. */
 export function useAppVersion(): string {
