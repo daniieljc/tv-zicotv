@@ -16,6 +16,7 @@ export interface Event {
   has_stream?: boolean
   /** Espectadores actuales del canal propio (0 si no hay canal propio). */
   viewers?: number
+  is_sync?: boolean
 }
 
 export interface LeagueEvents {

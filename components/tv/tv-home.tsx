@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { TVNavigationProvider } from '@/hooks/use-tv-navigation'
-import { eventScore } from '@/lib/api'
+import { compareLikeWeb, eventScore } from '@/lib/api'
 import { useAppVersion } from '@/lib/version'
 import { TVHeader } from './header'
 import { TVHero } from './hero'
@@ -31,7 +31,7 @@ export function TVHome({ data }: TVHomeProps) {
     const seen = new Set<number>()
     return [...allEvents]
         .filter((e) => eventScore(e) > 0)
-        .sort((a, b) => eventScore(b) - eventScore(a))
+        .sort(compareLikeWeb)
         .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
         .slice(0, 12)
   }, [allEvents])

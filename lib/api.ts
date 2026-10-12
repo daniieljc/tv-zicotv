@@ -49,6 +49,9 @@ interface V1Match {
   start_time: string
   status: string
   has_stream: boolean
+  /** Espectadores totales (propios + externos), como en la web. */
+  viewers?: number
+  is_sync?: boolean
   thumbnail_url?: string | null
   sources?: V1Source[]
 }
@@ -79,8 +82,18 @@ function toEvent(m: V1Match): Event {
     venue: m.venue,
     thumbnail_url: m.thumbnail_url ?? null,
     has_stream: m.has_stream,
-    viewers: ownViewers(m),
+    viewers: m.viewers ?? ownViewers(m),
+    is_sync: !!m.is_sync,
   }
+}
+
+/** Orden de la web: más espectadores, luego canal sincronizado ([DAZN]…), luego hora. */
+export function compareLikeWeb(a: Event, b: Event): number {
+  return (
+    (b.viewers ?? 0) - (a.viewers ?? 0) ||
+    Number(!!b.is_sync) - Number(!!a.is_sync) ||
+    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  )
 }
 
 // Puntuación de "lo más visto": espectadores reales primero; a igualdad, los
@@ -100,7 +113,7 @@ export async function fetchEvents(): Promise<EventsResponse> {
   const bySport: Record<string, SportData> = {}
   for (const m of matches) {
     const sport = m.sport_category || 'Otros'
-    const league = m.league || sport
+    const league = m.league || 'Otras ligas'
     if (!bySport[sport]) bySport[sport] = { total_events: 0, leagues_count: 0, leagues: {} }
     const sd = bySport[sport]
     if (!sd.leagues[league]) sd.leagues[league] = []
@@ -111,7 +124,7 @@ export async function fetchEvents(): Promise<EventsResponse> {
   for (const sd of Object.values(bySport)) {
     sd.leagues_count = Object.keys(sd.leagues).length
     for (const league of Object.keys(sd.leagues)) {
-      sd.leagues[league].sort((a, b) => eventScore(b) - eventScore(a))
+      sd.leagues[league].sort(compareLikeWeb)
     }
   }
 
