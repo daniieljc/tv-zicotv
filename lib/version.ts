@@ -36,7 +36,7 @@ export async function checkForUpdate(): Promise<UpdateState> {
 }
 
 /** versionName de android/app/build.gradle (respaldo fuera del APK). Mantener en sync. */
-export const APP_VERSION = '1.2.1'
+export const APP_VERSION = '1.2.2'
 
 /** Versión visible de la app ("v1.2.0"): la del APK instalado si es nativo. */
 export function useAppVersion(): string {
