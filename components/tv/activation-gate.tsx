@@ -10,7 +10,7 @@ interface ActivationGateProps {
 }
 
 // Pantalla de activación: es lo PRIMERO que ve el usuario. La app es exclusiva
-// Premium: se activa con el código personal de zicotv.cc/activar y el
+// Premium: se activa con el código personal de zicotv.cc/activate y el
 // reproductor va sin anuncios. auth.login() avisa a la página para entrar.
 export function ActivationGate({ notice }: ActivationGateProps) {
   const [code, setCode] = useState('')
@@ -95,7 +95,7 @@ export function ActivationGate({ notice }: ActivationGateProps) {
         </div>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground lg:text-xl">
           Desde el móvil o el ordenador entra en{' '}
-          <span className="font-bold text-foreground">zicotv.cc/activar</span> con tu cuenta Premium.
+          <span className="font-bold text-foreground">zicotv.cc/activate</span> con tu cuenta Premium.
           <br />
           ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">zicotv.cc/premium</span>
         </p>

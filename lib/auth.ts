@@ -1,5 +1,5 @@
 // Gate de activación: la app es exclusiva Premium. Al arrancar pide el código
-// personal del usuario (zicotv.cc/activar); con él el reproductor va SIN
+// personal del usuario (zicotv.cc/activate); con él el reproductor va SIN
 // anuncios (el backend lo reconoce por ?code= en /api/player). Se revalida en
 // cada arranque y al volver a primer plano: si el Premium caduca, se cierra la
 // sesión. El estado se guarda en localStorage. Mismo flujo que app-zicotv.
