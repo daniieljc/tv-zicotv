@@ -8,10 +8,13 @@ import { API_V1, fetchWithTimeout } from './http'
 
 // Acceso SIN anuncios a la URL del player con el código Premium del usuario.
 // (Nunca un token embebido en el APK: cualquiera podría extraerlo.)
+// app=1: el player no pinta su panel de servidores dentro del iframe (el mando
+// no llega ahí); los publica por postMessage y se cambian con ↑/↓.
 function withAccess(url: string): string {
+  const params = new URLSearchParams({ app: '1' })
   const code = auth.getCode()
-  if (!code) return url
-  return url + (url.includes('?') ? '&' : '?') + 'code=' + encodeURIComponent(code)
+  if (code) params.set('code', code)
+  return url + (url.includes('?') ? '&' : '?') + params.toString()
 }
 
 // ───────── Shapes crudos de v1 ─────────

@@ -95,7 +95,8 @@ export function ActivationGate({ notice }: ActivationGateProps) {
         </div>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground lg:text-xl">
           Desde el móvil o el ordenador entra en{' '}
-          <span className="font-bold text-foreground">zicotv.cc/activate</span> con tu cuenta Premium.
+          <span className="font-bold text-foreground">bp.zicotv.cc/activate</span> e inicia sesión con el correo
+          y la contraseña de tu cuenta Premium. Allí verás tu código.
           <br />
           ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">zicotv.cc/premium</span>
         </p>

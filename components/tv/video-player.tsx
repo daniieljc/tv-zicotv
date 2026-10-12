@@ -23,6 +23,15 @@ interface Stream {
 
 type SourceStatus = 'idle' | 'loading' | 'active' | 'error'
 
+/** Servidor (CDN) del reproductor propio, publicado por el player con postMessage. */
+interface PlayerServer {
+  index: number
+  label: string
+  premium: boolean
+  locked: boolean
+  viewers: number | null
+}
+
 // Nombre visible de una fuente. Las que no tienen nombre propio (las "manual"
 // de los scrapers) se numeran: "Opción 3" se entiende mejor que "manual" x7.
 // position = posición de la fuente en la lista completa (1 = la primera).
@@ -58,6 +67,36 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
   const [resolvedSources, setResolvedSources] = useState<Record<number, Stream[]>>({})
   const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({})
   const [focusedSourceIdx, setFocusedSourceIdx] = useState(0)
+  // Servidores del canal oficial. El selector va dentro del iframe del player y
+  // el mando no llega ahí (otro origen): el player los publica (?app=1) y aquí se
+  // cambian con ↑/↓.
+  const [servers, setServers] = useState<PlayerServer[]>([])
+  const [activeServer, setActiveServer] = useState(0)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const usableServers = servers.filter((s) => !s.locked)
+
+  useEffect(() => {
+    setServers([])
+    setActiveServer(0)
+    const onMessage = (ev: MessageEvent) => {
+      if (ev.source !== iframeRef.current?.contentWindow) return
+      const d = ev.data as { type?: string; active?: number; servers?: PlayerServer[] }
+      if (d?.type === 'zt:servers' && Array.isArray(d.servers)) {
+        setServers(d.servers)
+        setActiveServer(d.active ?? 0)
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [activeUrl])
+
+  const switchServer = useCallback((direction: 1 | -1) => {
+    if (usableServers.length < 2) return
+    const pos = Math.max(0, usableServers.findIndex((s) => s.index === activeServer))
+    const next = usableServers[(pos + direction + usableServers.length) % usableServers.length]
+    iframeRef.current?.contentWindow?.postMessage({ type: 'zt:set-server', index: next.index }, '*')
+    setActiveServer(next.index)
+  }, [usableServers, activeServer])
   // Si el foco está en "Volver", OK/←/→ son para ese botón, no para el reproductor.
   const navFocusedId = useFocusedId()
   const backFocused = navFocusedId === 'back-btn'
@@ -179,6 +218,12 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
             handleStartStream(idx)
           }
         } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          // Canal oficial: ↑/↓ cambian de servidor (CDN).
+          if (activeSource === 'own' && usableServers.length > 1) {
+            e.preventDefault()
+            switchServer(e.key === 'ArrowUp' ? -1 : 1)
+            return
+          }
           // Switch streams within same source
           if (activeSource !== null && activeSource !== 'own') {
             const streams = resolvedSources[activeSource]
@@ -197,7 +242,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
     // ignora las teclas a las que aquí se les hace preventDefault.
     window.addEventListener('keydown', handleKeyDown, true)
     return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [hasInteracted, focusedSourceIdx, activeSource, activeStreamIdx, totalSources, ownStream, resolvedSources, backFocused])
+  }, [hasInteracted, focusedSourceIdx, activeSource, activeStreamIdx, totalSources, ownStream, resolvedSources, backFocused, usableServers.length, switchServer])
 
   return (
       <div ref={areaRef} className="absolute inset-0 bg-black">
@@ -226,6 +271,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                 <ClapprPlayer url={activeUrl} poster={thumbnail} />
             ) : (
                 <iframe
+                    ref={iframeRef}
                     key={activeUrl}
                     src={activeUrl}
                     className="w-full h-full border-0"
@@ -283,6 +329,27 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                 })}
               </div>
 
+              {/* Servidores del canal oficial (↑/↓ del mando) */}
+              {activeSource === 'own' && usableServers.length > 1 && (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="mr-2 text-base font-bold uppercase tracking-widest text-white/50">Servidor</span>
+                    {usableServers.map((s) => (
+                        <span
+                            key={s.index}
+                            className={cn(
+                                'flex items-center gap-2 rounded-lg px-4 py-2 text-base font-medium',
+                                s.index === activeServer ? 'border border-primary bg-primary/30 text-white' : 'border border-white/10 bg-white/5 text-white/70'
+                            )}
+                        >
+                          {s.premium && <span className="text-amber-400">★</span>}
+                          {s.label}
+                          {s.viewers != null && <span className="text-sm text-white/50">{s.viewers}</span>}
+                        </span>
+                    ))}
+                    <span className="ml-2 text-base text-white/50">↑↓ para cambiar</span>
+                  </div>
+              )}
+
               {/* Stream Selector (if multiple streams in active source) */}
               {activeSource !== null && activeSource !== 'own' && (
                   <StreamSelector
@@ -311,7 +378,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
               <div className="px-4 py-2 bg-black/80 rounded-lg">
             <span className="text-lg text-white font-medium">
               {activeSource === 'own'
-                  ? (ownStream?.name || 'Oficial')
+                  ? `${ownStream?.name || 'Oficial'}${usableServers.length > 1 ? ` · ${servers.find((s) => s.index === activeServer)?.label ?? ''}` : ''}`
                   : fallbackSources?.[activeSource as number]
                       ? `${getSourceLabel(fallbackSources[activeSource as number].source, (activeSource as number) + (ownStream ? 2 : 1))} - Stream ${activeStreamIdx + 1}`
                       : ''
@@ -322,7 +389,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
         )}
 
         {/* Navigation Hint */}
-        {hasInteracted && !playerLoading && activeSource !== null && activeSource !== 'own' && (resolvedSources[activeSource]?.length ?? 0) > 1 && (
+        {hasInteracted && !playerLoading && activeSource !== null && (activeSource === 'own' ? usableServers.length > 1 : (resolvedSources[activeSource]?.length ?? 0) > 1) && (
             <div className={cn(
                 'absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground transition-opacity duration-300',
                 !chromeVisible && 'opacity-0 pointer-events-none'
@@ -330,7 +397,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
               {/* "← → Cambiar fuente" ya sale en la ayuda general de abajo. */}
               <div className="flex items-center gap-2">
                 <kbd className="px-2 py-1 bg-white/10 rounded text-sm">↑↓</kbd>
-                <span className="text-base">Cambiar stream</span>
+                <span className="text-base">{activeSource === 'own' ? 'Cambiar servidor' : 'Cambiar stream'}</span>
               </div>
             </div>
         )}
