@@ -30,7 +30,8 @@ export function TVHome({ data }: TVHomeProps) {
   const mostViewed = useMemo(() => {
     const seen = new Set<number>()
     return [...allEvents]
-        .filter((e) => eventScore(e) > 0)
+        // Lo terminado/cancelado no se destaca: ya no se puede ver en directo.
+        .filter((e) => (e.status === 'live' || e.status === 'scheduled') && eventScore(e) > 0)
         .sort(compareLikeWeb)
         .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
         .slice(0, 12)
@@ -38,7 +39,7 @@ export function TVHome({ data }: TVHomeProps) {
 
   // Hero = el evento más visto (o el primero en vivo, o el primero).
   const heroEvent = useMemo(
-      () => mostViewed[0] || allEvents.find((e) => e.status === 'live') || allEvents[0],
+      () => mostViewed.find((e) => e.status === 'live') || mostViewed[0] || allEvents.find((e) => e.status === 'live') || allEvents.find((e) => e.status === 'scheduled') || allEvents[0],
       [mostViewed, allEvents],
   )
 

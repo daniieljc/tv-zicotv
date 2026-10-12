@@ -47,17 +47,17 @@ export function ActivationGate({ notice }: ActivationGateProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+    <div className="flex min-h-screen items-center justify-center overflow-y-auto bg-background px-6 py-6">
       <div className="w-full max-w-xl text-center">
         {/* Marca */}
-        <h1 className="mb-3 text-5xl font-black tracking-tighter lg:text-7xl">
+        <h1 className="mb-2 text-4xl font-black tracking-tighter lg:text-6xl">
           <span className="text-primary">ZICO</span>
           <span className="text-foreground">TV</span>
         </h1>
         <div className="mb-4 inline-block rounded-full bg-amber-500 px-4 py-1 text-sm font-black uppercase tracking-[0.2em] text-black lg:text-base">
           Exclusivo Premium
         </div>
-        <p className="mb-10 text-lg text-muted-foreground lg:text-2xl">
+        <p className="mb-6 text-lg text-muted-foreground lg:text-2xl">
           Introduce tu código Premium para empezar
         </p>
 
@@ -73,7 +73,7 @@ export function ActivationGate({ notice }: ActivationGateProps) {
           placeholder="ZICO-XXXX-XXXX"
           autoCapitalize="characters"
           spellCheck={false}
-          className="mb-4 w-full rounded-2xl border-2 border-border bg-secondary/40 px-6 py-5 text-center text-2xl font-bold uppercase tracking-[0.2em] text-foreground outline-none transition-colors placeholder:tracking-normal placeholder:text-muted-foreground/50 focus:border-primary lg:text-3xl"
+          className="mb-4 w-full rounded-2xl border-2 border-border bg-secondary/40 px-6 py-4 text-center text-2xl font-bold uppercase tracking-[0.2em] text-foreground outline-none transition-colors placeholder:tracking-normal placeholder:text-muted-foreground/50 focus:border-primary lg:text-3xl"
         />
 
         {/* Error */}
@@ -83,7 +83,7 @@ export function ActivationGate({ notice }: ActivationGateProps) {
         <button
           onClick={activate}
           disabled={loading !== null}
-          className="mb-6 w-full rounded-2xl bg-primary px-8 py-5 text-2xl font-bold text-primary-foreground outline-none transition-all focus:ring-4 focus:ring-white disabled:opacity-50 lg:text-3xl"
+          className="mb-6 w-full rounded-2xl bg-primary px-8 py-4 text-2xl font-bold text-primary-foreground outline-none transition-all focus:ring-4 focus:ring-white disabled:opacity-50 lg:text-3xl"
         >
           {loading === 'validate' ? 'Comprobando…' : 'Activar'}
         </button>
@@ -94,14 +94,14 @@ export function ActivationGate({ notice }: ActivationGateProps) {
           <span className="text-base lg:text-lg">¿No tienes código?</span>
           <span className="h-px flex-1 bg-border" />
         </div>
-        <p className="mt-5 text-lg leading-relaxed text-muted-foreground lg:text-xl">
+        <p className="mt-4 text-lg leading-relaxed text-muted-foreground lg:text-xl">
           Desde el móvil o el ordenador entra en{' '}
           <span className="font-bold text-foreground">{webHost()}/activate</span> e inicia sesión con el correo
           y la contraseña de tu cuenta Premium. Allí verás tu código.
           <br />
           ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">{webHost()}/premium</span>
         </p>
-        <p className="mt-8 text-sm text-muted-foreground/60 lg:text-base">Zico TV {version}</p>
+        <p className="mt-4 text-sm text-muted-foreground/60 lg:text-base">Zico TV {version}</p>
       </div>
     </div>
   )

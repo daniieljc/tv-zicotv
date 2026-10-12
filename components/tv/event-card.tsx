@@ -152,7 +152,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
             {/* Time / Status */}
             <div className="flex items-center justify-between gap-2 text-xs lg:text-base">
               <span className="font-bold tabular-nums text-white/80">
-                {event.status === 'live' ? 'En directo' : formattedTime || '--:--'}
+                {event.status === 'live' ? 'En directo' : event.status === 'finished' ? 'Finalizado' : event.status === 'cancelled' ? 'Cancelado' : event.status === 'postponed' ? 'Aplazado' : formattedTime || '--:--'}
               </span>
               {event.viewers && event.viewers > 0 ? (
                 <span className="flex flex-shrink-0 items-center gap-1 font-bold tabular-nums text-primary">

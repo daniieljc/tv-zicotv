@@ -12,6 +12,8 @@ interface VideoPlayerProps {
   fallbackSources: FallbackSource[]
   thumbnail?: string
   chromeVisible?: boolean
+  /** Avisa cuando empieza/deja de reproducirse (la página oculta su ficha grande). */
+  onPlayingChange?: (playing: boolean) => void
 }
 
 interface Stream {
@@ -57,7 +59,7 @@ function isDirectStream(url: string): boolean {
   return /\.(m3u8|mp4|webm|ogg|ts)(\?.*)?$/i.test(url) || url.includes('/proxy?url=')
 }
 
-export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisible = true }: VideoPlayerProps) {
+export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisible = true, onPlayingChange }: VideoPlayerProps) {
   const [hasInteracted, setHasInteracted] = useState(false)
   const [activeUrl, setActiveUrl] = useState<string | null>(null)
   const [activeSource, setActiveSource] = useState<'own' | number | null>(null)
@@ -74,6 +76,11 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
   const [activeServer, setActiveServer] = useState(0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const usableServers = servers.filter((s) => !s.locked)
+
+  const playing = hasInteracted && !!activeUrl && !playerLoading && !playerError
+  useEffect(() => {
+    onPlayingChange?.(playing)
+  }, [playing, onPlayingChange])
 
   useEffect(() => {
     setServers([])
@@ -289,7 +296,8 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
         {/* Source Selector - shown when interacted */}
         {hasInteracted && !playerLoading && !playerError && (
             <div className={cn(
-                'absolute bottom-32 left-8 right-8 transition-opacity duration-300',
+                // Por encima de la barra de control del reproductor (abajo del todo).
+                'absolute bottom-20 left-8 right-8 rounded-2xl bg-gradient-to-t from-black/85 via-black/60 to-transparent p-6 transition-opacity duration-300',
                 !chromeVisible && 'opacity-0 pointer-events-none'
             )}>
               <div className="text-lg font-bold text-white/60 uppercase tracking-widest mb-4">
@@ -304,6 +312,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                         isActive={activeSource === 'own'}
                         isLoading={sourceStatuses['own'] === 'loading'}
                         isError={sourceStatuses['own'] === 'error'}
+                        subtitle="Canal oficial"
                         onClick={() => handleStartStream('own')}
                     />
                 )}
@@ -346,9 +355,18 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                           {s.viewers != null && <span className="text-sm text-white/50">{s.viewers}</span>}
                         </span>
                     ))}
-                    <span className="ml-2 text-base text-white/50">↑↓ para cambiar</span>
                   </div>
               )}
+
+              {/* Una sola línea de ayuda con las teclas del mando (antes había
+                  varias que se solapaban entre sí y con la barra del reproductor). */}
+              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-base text-white/60">
+                <span><kbd className="rounded bg-white/10 px-2 py-0.5">← →</kbd> Fuente</span>
+                {(activeSource === 'own' ? usableServers.length > 1 : activeSource !== null && (resolvedSources[activeSource]?.length ?? 0) > 1) && (
+                    <span><kbd className="rounded bg-white/10 px-2 py-0.5">↑ ↓</kbd> {activeSource === 'own' ? 'Servidor' : 'Stream'}</span>
+                )}
+                <span><kbd className="rounded bg-white/10 px-2 py-0.5">Atrás</kbd> Volver</span>
+              </div>
 
               {/* Stream Selector (if multiple streams in active source) */}
               {activeSource !== null && activeSource !== 'own' && (
@@ -388,19 +406,6 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
             </div>
         )}
 
-        {/* Navigation Hint */}
-        {hasInteracted && !playerLoading && activeSource !== null && (activeSource === 'own' ? usableServers.length > 1 : (resolvedSources[activeSource]?.length ?? 0) > 1) && (
-            <div className={cn(
-                'absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground transition-opacity duration-300',
-                !chromeVisible && 'opacity-0 pointer-events-none'
-            )}>
-              {/* "← → Cambiar fuente" ya sale en la ayuda general de abajo. */}
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-sm">↑↓</kbd>
-                <span className="text-base">{activeSource === 'own' ? 'Cambiar servidor' : 'Cambiar stream'}</span>
-              </div>
-            </div>
-        )}
       </div>
   )
 }
@@ -495,6 +500,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 
 interface SourceButtonProps {
   label: string
+  subtitle?: string
   quality: string
   isActive: boolean
   isLoading: boolean
@@ -504,7 +510,7 @@ interface SourceButtonProps {
   onClick: () => void
 }
 
-function SourceButton({ label, quality, isActive, isLoading, isError, streamCount, activeStreamIdx, onClick }: SourceButtonProps) {
+function SourceButton({ label, subtitle, quality, isActive, isLoading, isError, streamCount, activeStreamIdx, onClick }: SourceButtonProps) {
   return (
       <button
           onClick={onClick}
@@ -542,7 +548,7 @@ function SourceButton({ label, quality, isActive, isLoading, isError, streamCoun
           <div className="text-sm text-white/50">
             {isActive && streamCount && streamCount > 1
                 ? `Stream ${(activeStreamIdx ?? 0) + 1} de ${streamCount}`
-                : isError ? 'No disponible' : 'Señal alternativa'
+                : isError ? 'No disponible' : subtitle ?? 'Señal alternativa'
             }
           </div>
         </div>

@@ -111,7 +111,7 @@ export function TVHero({ event }: HeroProps) {
           <svg className="w-5 h-5 lg:w-10 lg:h-10" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
-          {event.status === 'live' ? 'VER AHORA' : formattedTime ? `VER A LAS ${formattedTime}` : 'VER'}
+          {event.status === 'live' ? 'VER AHORA' : event.status === 'finished' ? 'FINALIZADO' : formattedTime ? `VER A LAS ${formattedTime}` : 'VER'}
         </button>
       </div>
     </section>

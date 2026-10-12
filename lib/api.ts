@@ -73,7 +73,9 @@ function toEvent(m: V1Match): Event {
     title: m.title,
     league: m.league,
     start_time: m.start_time,
-    status: m.status === 'live' ? 'live' : 'scheduled',
+    // Estado real: antes todo lo que no era 'live' pasaba a 'scheduled' y un
+    // partido terminado salía como "VER A LAS 21:00".
+    status: (['live', 'finished', 'cancelled', 'postponed'].includes(m.status) ? m.status : 'scheduled') as Event['status'],
     sport_category: m.sport_category,
     home_team: m.home_team,
     away_team: m.away_team,

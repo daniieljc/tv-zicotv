@@ -3,7 +3,7 @@ export interface Event {
   title: string
   league: string
   start_time: string
-  status: 'live' | 'scheduled'
+  status: 'live' | 'scheduled' | 'finished' | 'cancelled' | 'postponed'
   sport_category: string
   home_team: string | null
   away_team: string | null

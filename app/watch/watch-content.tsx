@@ -16,6 +16,9 @@ interface WatchContentProps {
 export function WatchContent({ eventId }: WatchContentProps) {
   const router = useRouter()
   const [showInfo, setShowInfo] = useState(true)
+  // Con el vídeo en marcha la ficha grande (título, fecha) se oculta: tapaba el
+  // panel de fuentes. Arriba a la derecha sigue el canal/servidor en uso.
+  const [playing, setPlaying] = useState(false)
   const [chromeVisible, setChromeVisible] = useState(true)
   const [data, setData] = useState<EventDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -112,6 +115,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
         fallbackSources={fallback_sources}
         thumbnail={event.thumbnail_url ?? undefined}
         chromeVisible={chromeVisible}
+        onPlayingChange={setPlaying}
       />
 
       {/* Back Button */}
@@ -120,7 +124,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
       </div>
 
       {/* Event Info Overlay */}
-      {showInfo && (
+      {showInfo && !playing && (
         <div className={cn(
           // pt-28: deja sitio al botón "Volver" (arriba a la izquierda), que antes la tapaba.
           'absolute top-0 left-0 right-0 px-8 pb-8 pt-28 bg-gradient-to-b from-black/90 via-black/50 to-transparent transition-opacity duration-300',
@@ -211,8 +215,8 @@ export function WatchContent({ eventId }: WatchContentProps) {
         </div>
       )}
 
-      {/* Controls Hint */}
-      <div className={cn(
+      {/* Controls Hint (antes de reproducir; luego va dentro del panel de fuentes) */}
+      {!playing && <div className={cn(
         'absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl backdrop-blur-sm transition-opacity duration-300',
         !chromeVisible && 'opacity-0 pointer-events-none'
       )}>
@@ -234,7 +238,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
           </div>
           <span className="text-lg">Cambiar fuente</span>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
