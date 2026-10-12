@@ -110,7 +110,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
       <VideoPlayer
         ownStream={own_stream}
         fallbackSources={fallback_sources}
-        thumbnail={event.thumbnail_url}
+        thumbnail={event.thumbnail_url ?? undefined}
         chromeVisible={chromeVisible}
       />
 
@@ -122,7 +122,8 @@ export function WatchContent({ eventId }: WatchContentProps) {
       {/* Event Info Overlay */}
       {showInfo && (
         <div className={cn(
-          'absolute top-0 left-0 right-0 p-8 bg-gradient-to-b from-black/90 via-black/50 to-transparent transition-opacity duration-300',
+          // pt-28: deja sitio al botón "Volver" (arriba a la izquierda), que antes la tapaba.
+          'absolute top-0 left-0 right-0 px-8 pb-8 pt-28 bg-gradient-to-b from-black/90 via-black/50 to-transparent transition-opacity duration-300',
           !chromeVisible && 'opacity-0 pointer-events-none'
         )}>
           <div className="flex items-start justify-between">
@@ -215,14 +216,15 @@ export function WatchContent({ eventId }: WatchContentProps) {
         'absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl backdrop-blur-sm transition-opacity duration-300',
         !chromeVisible && 'opacity-0 pointer-events-none'
       )}>
+        {/* Teclas que existen en un mando de TV (las de teclado, ESC/I, siguen funcionando). */}
         <div className="flex items-center gap-3 text-muted-foreground">
-          <kbd className="px-3 py-1.5 bg-muted rounded text-base font-medium">ESC</kbd>
+          <kbd className="px-3 py-1.5 bg-muted rounded text-base font-medium">Atrás</kbd>
           <span className="text-lg">Volver</span>
         </div>
         <div className="w-px h-6 bg-border" />
         <div className="flex items-center gap-3 text-muted-foreground">
-          <kbd className="px-3 py-1.5 bg-muted rounded text-base font-medium">I</kbd>
-          <span className="text-lg">Info</span>
+          <kbd className="px-3 py-1.5 bg-muted rounded text-base font-medium">OK</kbd>
+          <span className="text-lg">Ver</span>
         </div>
         <div className="w-px h-6 bg-border" />
         <div className="flex items-center gap-3 text-muted-foreground">
@@ -238,7 +240,9 @@ export function WatchContent({ eventId }: WatchContentProps) {
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {
-  const { ref, focused } = useFocusable({ focusKey: 'back-btn', row: 0, col: 0, onEnterPress: onBack })
+  // Fila -1 (encima del reproductor, que es la 0): se llega con ↑ y no compite
+  // con ←/→, que el reproductor usa para cambiar de fuente.
+  const { ref, focused } = useFocusable({ focusKey: 'back-btn', row: -1, col: 0, onEnterPress: onBack })
 
   return (
     <button

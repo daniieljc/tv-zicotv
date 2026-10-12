@@ -1,22 +1,17 @@
 import type { EventsResponse, EventDetailResponse, Event, SportData, FallbackSource, Stream, OwnStream } from './types'
 import auth from './auth'
+import { API_V1, fetchWithTimeout } from './http'
 
 // API pública oficial v1. Devuelve los eventos en plano y, en el detalle, las
 // fuentes ya resueltas: la propia como página del PLAYER (iframe que firma el
 // stream por dentro, sin el 403 del .m3u8 crudo) y las externas con sus streams.
-const API_V1 = process.env.NEXT_PUBLIC_API_URL || 'https://zicotv.cc/api/v1'
 
-// (Opcional) token de cliente de entorno; alternativa al código.
-const API_TOKEN = process.env.NEXT_PUBLIC_ZICOTV_API_TOKEN || ''
-
-// Añade acceso SIN anuncios a la URL del player: primero el CÓDIGO de activación
-// guardado (flujo principal del gate), y si no hubiera, el token de entorno.
+// Acceso SIN anuncios a la URL del player con el código Premium del usuario.
+// (Nunca un token embebido en el APK: cualquiera podría extraerlo.)
 function withAccess(url: string): string {
-  const sep = url.includes('?') ? '&' : '?'
   const code = auth.getCode()
-  if (code) return url + sep + 'code=' + encodeURIComponent(code)
-  if (API_TOKEN) return url + sep + 'token=' + encodeURIComponent(API_TOKEN)
-  return url
+  if (!code) return url
+  return url + (url.includes('?') ? '&' : '?') + 'code=' + encodeURIComponent(code)
 }
 
 // ───────── Shapes crudos de v1 ─────────
@@ -93,7 +88,7 @@ export function eventScore(e: Event): number {
 
 // Lista: v1 plano → agrupado por deporte → liga (lo que espera la UI de TV).
 export async function fetchEvents(): Promise<EventsResponse> {
-  const res = await fetch(`${API_V1}/events`)
+  const res = await fetchWithTimeout(`${API_V1}/events`)
   if (!res.ok) throw new Error('Failed to fetch events')
 
   const payload: V1EventsResponse = await res.json()
@@ -136,7 +131,7 @@ export async function fetchEvents(): Promise<EventsResponse> {
 
 // Detalle: v1 sources → own_stream (página del player, iframe) + fallback con streams.
 export async function fetchEvent(id: number): Promise<EventDetailResponse> {
-  const res = await fetch(`${API_V1}/events/${id}`)
+  const res = await fetchWithTimeout(`${API_V1}/events/${id}`)
   if (!res.ok) throw new Error('Failed to fetch event')
 
   const m: V1Match = (await res.json()).data

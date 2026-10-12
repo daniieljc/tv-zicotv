@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useFocusable } from '@/hooks/use-tv-navigation'
 
 interface HeaderProps {
   activeTab: string
@@ -24,20 +25,8 @@ export function TVHeader({ activeTab, onTabChange, liveCount, sports }: HeaderPr
 
       {/* Navigation Tabs (deportes reales, con scroll horizontal si hay muchos) */}
       <nav className="hidden md:flex flex-1 items-center gap-2 lg:gap-3 overflow-x-auto scrollbar-hide">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={cn(
-              'flex-shrink-0 px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-xl font-semibold rounded-lg transition-all duration-200',
-              'outline-none border-2 cursor-pointer whitespace-nowrap',
-              activeTab === tab.id
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground',
-            )}
-          >
-            {tab.label}
-          </button>
+        {tabs.map((tab, i) => (
+          <HeaderTab key={tab.id} label={tab.label} index={i} active={activeTab === tab.id} onSelect={() => onTabChange(tab.id)} />
         ))}
       </nav>
 
@@ -61,5 +50,27 @@ export function TVHeader({ activeTab, onTabChange, liveCount, sports }: HeaderPr
         <span className="text-sm lg:text-xl font-bold text-foreground whitespace-nowrap">{liveCount} en vivo</span>
       </div>
     </header>
+  )
+}
+
+// Pestaña enfocable con el mando: fila -1 (encima del hero). OK la selecciona.
+function HeaderTab({ label, index, active, onSelect }: { label: string; index: number; active: boolean; onSelect: () => void }) {
+  const { ref, focused } = useFocusable({ focusKey: `tab-${index}`, row: -1, col: index, onEnterPress: onSelect })
+
+  return (
+    <button
+      ref={ref}
+      onClick={onSelect}
+      className={cn(
+        'flex-shrink-0 px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-xl font-semibold rounded-lg transition-all duration-200',
+        'outline-none border-2 cursor-pointer whitespace-nowrap',
+        active
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground',
+        focused && 'scale-105 border-white shadow-[0_0_24px_rgba(255,255,255,0.35)]',
+      )}
+    >
+      {label}
+    </button>
   )
 }

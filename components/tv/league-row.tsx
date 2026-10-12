@@ -29,7 +29,8 @@ export function LeagueRow({ leagueName, events, rowIndex }: LeagueRowProps) {
           <EventCard
             key={event.id}
             event={event}
-            focusKey={`event-${event.id}`}
+            // Un mismo evento sale en "Lo más visto" y en su liga: la clave lleva la fila.
+            focusKey={`r${rowIndex}-event-${event.id}`}
             row={rowIndex}
             col={colIndex}
           />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { TVHome } from '@/components/tv/tv-home'
 import { ActivationGate } from '@/components/tv/activation-gate'
+import { UpdatePrompt } from '@/components/tv/update-prompt'
 import { fetchEvents } from '@/lib/api'
 import { auth } from '@/lib/auth'
 import type { EventsResponse } from '@/lib/types'
@@ -16,9 +17,25 @@ export default function HomePage() {
   const [authed, setAuthed] = useState<boolean | null>(null)
   const [data, setData] = useState<EventsResponse | null>(null)
   const [failed, setFailed] = useState(false)
+  const [notice, setNotice] = useState<string | undefined>()
 
+  // App exclusiva Premium: revalida el código al arrancar y al volver a primer
+  // plano; si ya no vale (Premium caducado), auth.logout() nos lleva al gate.
   useEffect(() => {
     setAuthed(auth.isAuthenticated())
+    const unsubscribe = auth.subscribe((ok, message) => {
+      setAuthed(ok)
+      setNotice(ok ? undefined : message)
+    })
+    auth.revalidate()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') auth.revalidate()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      unsubscribe()
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   useEffect(() => {
@@ -43,11 +60,19 @@ export default function HomePage() {
     }
   }, [authed])
 
+  return (
+    <>
+      <UpdatePrompt />
+      {renderContent()}
+    </>
+  )
+
+  function renderContent() {
   // Mientras comprobamos la activación (primer render) no parpadeamos el gate.
   if (authed === null) return <div className="min-h-screen bg-background" />
 
   // Lo PRIMERO: pedir el código si no está activado.
-  if (!authed) return <ActivationGate onActivated={() => setAuthed(true)} />
+  if (!authed) return <ActivationGate notice={notice} />
 
   if (!data) {
     return (
@@ -78,4 +103,5 @@ export default function HomePage() {
   }
 
   return <TVHome data={data} />
+  }
 }

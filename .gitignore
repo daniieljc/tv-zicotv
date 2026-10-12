@@ -9,3 +9,20 @@ node_modules/
 .env*.local
 .DS_Store
 .vercel
+
+# IDE
+.idea/
+android/.idea/
+
+# APKs de release (se publican fuera del repo)
+android/app/release/
+*.apk
+*.aab
+
+# Variables de entorno y firma
+.env
+.env.*
+!.env.example
+android/keystore.properties
+*.jks
+*.keystore

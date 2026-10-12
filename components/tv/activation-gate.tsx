@@ -2,19 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { auth } from '@/lib/auth'
+import { useAppVersion } from '@/lib/version'
 
 interface ActivationGateProps {
-  onActivated: () => void
+  /** Mensaje al llegar aquí por una sesión cerrada (p. ej. Premium caducado). */
+  notice?: string
 }
 
-// Pantalla de activación: es lo PRIMERO que ve el usuario. Con un código válido la
-// app queda activada (se guarda) y el reproductor va sin anuncios.
-export function ActivationGate({ onActivated }: ActivationGateProps) {
+// Pantalla de activación: es lo PRIMERO que ve el usuario. La app es exclusiva
+// Premium: se activa con el código personal de zicotv.cc/activar y el
+// reproductor va sin anuncios. auth.login() avisa a la página para entrar.
+export function ActivationGate({ notice }: ActivationGateProps) {
   const [code, setCode] = useState('')
-  const [loading, setLoading] = useState<'validate' | 'generate' | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [generated, setGenerated] = useState<string | null>(null)
+  const [loading, setLoading] = useState<'validate' | null>(null)
+  const [error, setError] = useState<string | null>(notice ?? null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const version = useAppVersion()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -32,27 +35,11 @@ export function ActivationGate({ onActivated }: ActivationGateProps) {
       const res = await auth.validate(value)
       if (res.valid) {
         auth.login(value)
-        onActivated()
       } else {
         setError(res.message || 'Código incorrecto o expirado')
       }
     } catch {
       setError('No se pudo conectar. Revisa tu conexión.')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  const generate = async () => {
-    setLoading('generate')
-    setError(null)
-    try {
-      const newCode = await auth.generate()
-      setCode(newCode)
-      setGenerated(newCode)
-      inputRef.current?.focus()
-    } catch {
-      setError('No se pudo generar el código')
     } finally {
       setLoading(null)
     }
@@ -66,8 +53,11 @@ export function ActivationGate({ onActivated }: ActivationGateProps) {
           <span className="text-primary">ZICO</span>
           <span className="text-foreground">TV</span>
         </h1>
+        <div className="mb-4 inline-block rounded-full bg-amber-500 px-4 py-1 text-sm font-black uppercase tracking-[0.2em] text-black lg:text-base">
+          Exclusivo Premium
+        </div>
         <p className="mb-10 text-lg text-muted-foreground lg:text-2xl">
-          Introduce tu código de acceso para empezar
+          Introduce tu código Premium para empezar
         </p>
 
         {/* Input del código */}
@@ -79,7 +69,7 @@ export function ActivationGate({ onActivated }: ActivationGateProps) {
             setError(null)
           }}
           onKeyDown={(e) => e.key === 'Enter' && activate()}
-          placeholder="TU CÓDIGO"
+          placeholder="ZICO-XXXX-XXXX"
           autoCapitalize="characters"
           spellCheck={false}
           className="mb-4 w-full rounded-2xl border-2 border-border bg-secondary/40 px-6 py-5 text-center text-2xl font-bold uppercase tracking-[0.2em] text-foreground outline-none transition-colors placeholder:tracking-normal placeholder:text-muted-foreground/50 focus:border-primary lg:text-3xl"
@@ -97,25 +87,19 @@ export function ActivationGate({ onActivated }: ActivationGateProps) {
           {loading === 'validate' ? 'Comprobando…' : 'Activar'}
         </button>
 
-        {/* Autoservicio: generar código */}
+        {/* Dónde conseguir el código (en la TV no hay navegador: se indica la dirección) */}
         <div className="flex items-center gap-4 text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
           <span className="text-base lg:text-lg">¿No tienes código?</span>
           <span className="h-px flex-1 bg-border" />
         </div>
-        <button
-          onClick={generate}
-          disabled={loading !== null}
-          className="mt-4 rounded-xl border-2 border-border bg-secondary/40 px-8 py-3 text-lg font-semibold text-foreground outline-none transition-all hover:bg-secondary focus:border-primary focus:ring-2 focus:ring-primary disabled:opacity-50 lg:text-xl"
-        >
-          {loading === 'generate' ? 'Generando…' : 'Generar código gratis'}
-        </button>
-
-        {generated && (
-          <p className="mt-5 text-base text-muted-foreground lg:text-lg">
-            Tu código: <span className="font-bold tracking-widest text-foreground">{generated}</span> — guárdalo y pulsa Activar
-          </p>
-        )}
+        <p className="mt-5 text-lg leading-relaxed text-muted-foreground lg:text-xl">
+          Desde el móvil o el ordenador entra en{' '}
+          <span className="font-bold text-foreground">zicotv.cc/activar</span> con tu cuenta Premium.
+          <br />
+          ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">zicotv.cc/premium</span>
+        </p>
+        <p className="mt-8 text-sm text-muted-foreground/60 lg:text-base">Zico TV {version}</p>
       </div>
     </div>
   )

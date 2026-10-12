@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useFocusable } from '@/hooks/use-tv-navigation'
+import { setFocus, useFocusable, useFocusedId } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import { ProxyImage } from './proxy-image'
 import type { OwnStream, FallbackSource } from '@/lib/types'
+import { API_ROOT, fetchWithTimeout } from '@/lib/http'
 
 interface VideoPlayerProps {
   ownStream: OwnStream | null
@@ -22,11 +23,17 @@ interface Stream {
 
 type SourceStatus = 'idle' | 'loading' | 'active' | 'error'
 
-function getSourceLabel(source: string): string {
+// Nombre visible de una fuente. Las que no tienen nombre propio (las "manual"
+// de los scrapers) se numeran: "Opción 3" se entiende mejor que "manual" x7.
+// position = posición de la fuente en la lista completa (1 = la primera).
+function getSourceLabel(source: string, position: number): string {
   const labels: Record<string, string> = {
     alpha: 'Alpha', delta: 'Delta', echo: 'Echo', golf: 'Golf', admin: 'Premium'
   }
-  return labels[source?.toLowerCase()] ?? source
+  const key = source?.toLowerCase() ?? ''
+  if (labels[key]) return labels[key]
+  if (!key || key === 'manual') return `Opción ${position}`
+  return source.charAt(0).toUpperCase() + source.slice(1)
 }
 
 function getSourceQuality(source: string): string {
@@ -51,6 +58,12 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
   const [resolvedSources, setResolvedSources] = useState<Record<number, Stream[]>>({})
   const [sourceStatuses, setSourceStatuses] = useState<Record<string, SourceStatus>>({})
   const [focusedSourceIdx, setFocusedSourceIdx] = useState(0)
+  // Si el foco está en "Volver", OK/←/→ son para ese botón, no para el reproductor.
+  const navFocusedId = useFocusedId()
+  const backFocused = navFocusedId === 'back-btn'
+  // Zona del reproductor como destino de foco (fila 0): desde "Volver" (fila -1)
+  // se vuelve aquí con ↓ aunque ya no exista el botón de Play.
+  const { ref: areaRef } = useFocusable({ focusKey: 'player-area', row: 0, col: 1 })
 
   const totalSources = (ownStream ? 1 : 0) + (fallbackSources?.length || 0)
 
@@ -94,7 +107,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
           if (inline?.length) {
             streams = inline
           } else {
-            const res = await fetch(`https://zicotv.cc/api/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
+            const res = await fetchWithTimeout(`${API_ROOT}/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
             const data = await res.json()
             streams = data.available ? data.streams : []
           }
@@ -131,6 +144,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
   // Keyboard navigation for TV
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (backFocused) return
       if (!hasInteracted) {
         // Before interaction - navigate sources
         if (e.key === 'ArrowLeft') {
@@ -179,18 +193,29 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [hasInteracted, focusedSourceIdx, activeSource, activeStreamIdx, totalSources, ownStream, resolvedSources])
+    // En captura: el reproductor decide antes que la navegación global, que
+    // ignora las teclas a las que aquí se les hace preventDefault.
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [hasInteracted, focusedSourceIdx, activeSource, activeStreamIdx, totalSources, ownStream, resolvedSources, backFocused])
 
   return (
-      <div className="absolute inset-0 bg-black">
+      <div ref={areaRef} className="absolute inset-0 bg-black">
         {/* Player Area */}
         {!hasInteracted ? (
             <PlayScreen
                 thumbnail={thumbnail}
                 totalSources={totalSources}
-                onPlay={() => handleStartStream(ownStream ? 'own' : 0)}
+                selectedIdx={focusedSourceIdx}
+                selectedLabel={
+                  ownStream && focusedSourceIdx === 0
+                      ? (ownStream.name || 'Oficial')
+                      : getSourceLabel(fallbackSources?.[ownStream ? focusedSourceIdx - 1 : focusedSourceIdx]?.source ?? '', focusedSourceIdx + 1)
+                }
+                onPlay={() => {
+                  const isOwn = ownStream && focusedSourceIdx === 0
+                  handleStartStream(isOwn ? 'own' : (ownStream ? focusedSourceIdx - 1 : focusedSourceIdx))
+                }}
             />
         ) : playerLoading ? (
             <LoadingScreen />
@@ -201,10 +226,16 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                 <ClapprPlayer url={activeUrl} poster={thumbnail} />
             ) : (
                 <iframe
+                    key={activeUrl}
                     src={activeUrl}
                     className="w-full h-full border-0"
                     allowFullScreen
-                    allow="autoplay; fullscreen"
+                    allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                    /* Fuentes externas: se permite el reproductor pero se bloquean los
+                       popups y la navegación del marco superior (así es como las webs
+                       piratas abren anuncios o te sacan de la app). El canal propio es
+                       de confianza. Ver también MainActivity.onCreateWindow. */
+                    sandbox={activeSource === 'own' ? undefined : 'allow-scripts allow-same-origin allow-presentation allow-forms'}
                 />
             )
         ) : null}
@@ -239,7 +270,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
                   return (
                       <SourceButton
                           key={idx}
-                          label={getSourceLabel(source.source)}
+                          label={getSourceLabel(source.source, idx + (ownStream ? 2 : 1))}
                           quality={getSourceQuality(source.source)}
                           isActive={isActive}
                           isLoading={sourceStatuses[String(idx)] === 'loading'}
@@ -266,7 +297,8 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
         {/* Source Info Overlay */}
         {hasInteracted && activeUrl && !playerLoading && (
             <div className={cn(
-                'absolute top-8 left-8 flex items-center gap-4 transition-opacity duration-300',
+                // Arriba a la derecha: a la izquierda está el botón "Volver".
+                'absolute top-8 right-8 flex items-center gap-4 transition-opacity duration-300',
                 !chromeVisible && 'opacity-0 pointer-events-none'
             )}>
               <div className="flex items-center gap-2 px-4 py-2 bg-black/80 rounded-lg">
@@ -281,7 +313,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
               {activeSource === 'own'
                   ? (ownStream?.name || 'Oficial')
                   : fallbackSources?.[activeSource as number]
-                      ? `${getSourceLabel(fallbackSources[activeSource as number].source)} - Stream ${activeStreamIdx + 1}`
+                      ? `${getSourceLabel(fallbackSources[activeSource as number].source, (activeSource as number) + (ownStream ? 2 : 1))} - Stream ${activeStreamIdx + 1}`
                       : ''
               }
             </span>
@@ -290,15 +322,12 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
         )}
 
         {/* Navigation Hint */}
-        {hasInteracted && !playerLoading && (
+        {hasInteracted && !playerLoading && activeSource !== null && activeSource !== 'own' && (resolvedSources[activeSource]?.length ?? 0) > 1 && (
             <div className={cn(
                 'absolute bottom-6 right-8 flex items-center gap-6 text-muted-foreground transition-opacity duration-300',
                 !chromeVisible && 'opacity-0 pointer-events-none'
             )}>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-sm">←→</kbd>
-                <span className="text-base">Cambiar fuente</span>
-              </div>
+              {/* "← → Cambiar fuente" ya sale en la ayuda general de abajo. */}
               <div className="flex items-center gap-2">
                 <kbd className="px-2 py-1 bg-white/10 rounded text-sm">↑↓</kbd>
                 <span className="text-base">Cambiar stream</span>
@@ -309,7 +338,13 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
   )
 }
 
-function PlayScreen({ thumbnail, totalSources, onPlay }: { thumbnail?: string; totalSources: number; onPlay: () => void }) {
+function PlayScreen({ thumbnail, totalSources, selectedIdx, selectedLabel, onPlay }: {
+  thumbnail?: string
+  totalSources: number
+  selectedIdx: number
+  selectedLabel: string
+  onPlay: () => void
+}) {
   const { ref, focused } = useFocusable({ focusKey: 'play-btn', row: 0, col: 0 })
 
   return (
@@ -335,9 +370,16 @@ function PlayScreen({ thumbnail, totalSources, onPlay }: { thumbnail?: string; t
           <div className="mt-6 text-xl font-bold text-white/80 uppercase tracking-widest">
             Ver en vivo
           </div>
-          <div className="mt-3 flex items-center gap-4 text-base text-white/50">
-            <span>{totalSources} fuente{totalSources !== 1 ? 's' : ''} disponible{totalSources !== 1 ? 's' : ''}</span>
-          </div>
+          {/* Fuente elegida con ←/→ antes de reproducir (antes cambiaba sin que se viera). */}
+          {totalSources > 0 && (
+            <div className="mt-5 flex items-center gap-4 rounded-xl bg-black/50 px-5 py-3 text-xl text-white">
+              <span className={cn('text-2xl', selectedIdx === 0 ? 'text-white/20' : 'text-white/70')}>‹</span>
+              <span className="font-bold">{selectedLabel || 'Fuente'}</span>
+              <span className="text-white/50">{selectedIdx + 1} / {totalSources}</span>
+              <span className={cn('text-2xl', selectedIdx >= totalSources - 1 ? 'text-white/20' : 'text-white/70')}>›</span>
+            </div>
+          )}
+          {totalSources > 1 && <div className="mt-2 text-base text-white/40">← → para elegir fuente · OK para ver</div>}
         </div>
       </div>
   )
@@ -356,13 +398,18 @@ function LoadingScreen() {
 
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
   const { ref, focused } = useFocusable({ focusKey: 'retry-btn', row: 0, col: 0, onEnterPress: onRetry })
+  // Sin esto el foco seguía en el Play ya desmontado y OK no hacía nada.
+  useEffect(() => {
+    const t = setTimeout(() => setFocus('retry-btn'), 0)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4">
         <svg className="w-16 h-16 text-primary/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <div className="text-2xl font-bold text-white">Senal no disponible</div>
+        <div className="text-2xl font-bold text-white">Señal no disponible</div>
         <div className="text-lg text-white/50">Prueba con otra fuente</div>
         <button
             ref={ref}
@@ -428,7 +475,7 @@ function SourceButton({ label, quality, isActive, isLoading, isError, streamCoun
           <div className="text-sm text-white/50">
             {isActive && streamCount && streamCount > 1
                 ? `Stream ${(activeStreamIdx ?? 0) + 1} de ${streamCount}`
-                : isError ? 'No disponible' : 'Senal alternativa'
+                : isError ? 'No disponible' : 'Señal alternativa'
             }
           </div>
         </div>
@@ -498,7 +545,8 @@ function ClapprPlayer({ url, poster }: { url: string; poster?: string }) {
       if (!(window as any).Clappr) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script')
-          script.src = 'https://cdn.jsdelivr.net/npm/@clappr/player@latest/dist/clappr.min.js'
+          // Versión fijada: @latest podría romper el reproductor en cualquier momento.
+          script.src = 'https://cdn.jsdelivr.net/npm/@clappr/player@0.14.7/dist/clappr.min.js'
           script.onload = () => resolve()
           script.onerror = reject
           document.head.appendChild(script)

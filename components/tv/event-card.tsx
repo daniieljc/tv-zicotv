@@ -128,7 +128,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
             {event.home_team && event.away_team && event.home_team !== 'Unknown Team' ? (
                 <div className="flex items-center justify-between mb-2 lg:mb-3">
                   <div className="flex items-center gap-2 lg:gap-3">
-                    <TeamBadge src={event.home_team_badge} alt={event.home_team} teamKey="home" />
+                    <TeamBadge src={event.home_team_badge ?? undefined} alt={event.home_team ?? undefined} teamKey="home" />
                     <span className="text-sm lg:text-xl font-semibold text-white truncate max-w-[80px] lg:max-w-[130px]">
                   {event.home_team}
                 </span>
@@ -138,7 +138,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
                 <span className="text-sm lg:text-xl font-semibold text-white truncate max-w-[80px] lg:max-w-[130px]">
                   {event.away_team}
                 </span>
-                    <TeamBadge src={event.away_team_badge} alt={event.away_team} teamKey="away" />
+                    <TeamBadge src={event.away_team_badge ?? undefined} alt={event.away_team ?? undefined} teamKey="away" />
                   </div>
                 </div>
             ) : (

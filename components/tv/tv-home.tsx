@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { TVNavigationProvider } from '@/hooks/use-tv-navigation'
 import { eventScore } from '@/lib/api'
+import { useAppVersion } from '@/lib/version'
 import { TVHeader } from './header'
 import { TVHero } from './hero'
 import { LeagueRow } from './league-row'
@@ -14,6 +15,7 @@ interface TVHomeProps {
 
 export function TVHome({ data }: TVHomeProps) {
   const [activeTab, setActiveTab] = useState('all')
+  const version = useAppVersion()
 
   // Todos los eventos en plano.
   const allEvents = useMemo(() => {
@@ -102,7 +104,7 @@ export function TVHome({ data }: TVHomeProps) {
           </main>
 
           {/* Ayuda de navegación (solo en pantalla grande / TV) */}
-          <div className="fixed bottom-8 right-8 hidden items-center gap-6 rounded-2xl border border-border bg-secondary/90 px-6 py-4 backdrop-blur-sm lg:flex">
+          <div className="fixed bottom-8 right-8 hidden items-center gap-6 rounded-2xl border border-border bg-secondary/90 px-6 py-4 backdrop-blur-sm md:flex">
             <div className="flex items-center gap-3 text-muted-foreground">
               <span className="text-lg font-medium">Navegar</span>
               <div className="flex gap-1.5">
@@ -116,6 +118,8 @@ export function TVHome({ data }: TVHomeProps) {
               <span className="text-lg font-medium">Seleccionar</span>
               <kbd className="rounded-md border border-primary/50 bg-primary/30 px-4 py-1.5 text-base font-bold text-primary">OK</kbd>
             </div>
+            <span className="h-7 w-px bg-border" />
+            <span className="text-base font-semibold text-muted-foreground/70">{version}</span>
           </div>
         </div>
       </TVNavigationProvider>
