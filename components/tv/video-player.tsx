@@ -5,7 +5,7 @@ import { setFocus, useFocusable, useFocusedId } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import { ProxyImage } from './proxy-image'
 import type { OwnStream, FallbackSource } from '@/lib/types'
-import { API_ROOT, fetchWithTimeout } from '@/lib/http'
+import { apiFetch } from '@/lib/http'
 
 interface VideoPlayerProps {
   ownStream: OwnStream | null
@@ -146,7 +146,7 @@ export function VideoPlayer({ ownStream, fallbackSources, thumbnail, chromeVisib
           if (inline?.length) {
             streams = inline
           } else {
-            const res = await fetchWithTimeout(`${API_ROOT}/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
+            const res = await apiFetch(`/streams/${fallbackSources[type].source}/${fallbackSources[type].id}`)
             const data = await res.json()
             streams = data.available ? data.streams : []
           }

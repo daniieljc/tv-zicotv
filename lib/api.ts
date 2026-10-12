@@ -1,6 +1,6 @@
 import type { EventsResponse, EventDetailResponse, Event, SportData, FallbackSource, Stream, OwnStream } from './types'
 import auth from './auth'
-import { API_V1, fetchWithTimeout } from './http'
+import { apiFetch } from './http'
 
 // API pública oficial v1. Devuelve los eventos en plano y, en el detalle, las
 // fuentes ya resueltas: la propia como página del PLAYER (iframe que firma el
@@ -91,7 +91,7 @@ export function eventScore(e: Event): number {
 
 // Lista: v1 plano → agrupado por deporte → liga (lo que espera la UI de TV).
 export async function fetchEvents(): Promise<EventsResponse> {
-  const res = await fetchWithTimeout(`${API_V1}/events`)
+  const res = await apiFetch('/v1/events')
   if (!res.ok) throw new Error('Failed to fetch events')
 
   const payload: V1EventsResponse = await res.json()
@@ -134,7 +134,7 @@ export async function fetchEvents(): Promise<EventsResponse> {
 
 // Detalle: v1 sources → own_stream (página del player, iframe) + fallback con streams.
 export async function fetchEvent(id: number): Promise<EventDetailResponse> {
-  const res = await fetchWithTimeout(`${API_V1}/events/${id}`)
+  const res = await apiFetch(`/v1/events/${id}`)
   if (!res.ok) throw new Error('Failed to fetch event')
 
   const m: V1Match = (await res.json()).data

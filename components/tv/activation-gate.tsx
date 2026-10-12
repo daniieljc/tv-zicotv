@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { auth } from '@/lib/auth'
+import { webHost } from '@/lib/http'
 import { useAppVersion } from '@/lib/version'
 
 interface ActivationGateProps {
@@ -95,10 +96,10 @@ export function ActivationGate({ notice }: ActivationGateProps) {
         </div>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground lg:text-xl">
           Desde el móvil o el ordenador entra en{' '}
-          <span className="font-bold text-foreground">bp.zicotv.cc/activate</span> e inicia sesión con el correo
+          <span className="font-bold text-foreground">{webHost()}/activate</span> e inicia sesión con el correo
           y la contraseña de tu cuenta Premium. Allí verás tu código.
           <br />
-          ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">zicotv.cc/premium</span>
+          ¿Aún no eres Premium? Hazte en <span className="font-bold text-foreground">{webHost()}/premium</span>
         </p>
         <p className="mt-8 text-sm text-muted-foreground/60 lg:text-base">Zico TV {version}</p>
       </div>

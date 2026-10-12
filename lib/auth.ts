@@ -4,7 +4,7 @@
 // cada arranque y al volver a primer plano: si el Premium caduca, se cierra la
 // sesión. El estado se guarda en localStorage. Mismo flujo que app-zicotv.
 
-import { API_V1, fetchWithTimeout } from './http'
+import { apiFetch } from './http'
 
 const KEY_AUTH = 'isAuthenticated'
 const KEY_CODE = 'accessCode'
@@ -40,7 +40,7 @@ export const auth = {
 
   /** Valida el código contra el backend. No persiste nada por sí solo. */
   async validate(code: string): Promise<ValidateResponse> {
-    const res = await fetchWithTimeout(`${API_V1}/access-codes/validate`, {
+    const res = await apiFetch('/v1/access-codes/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ code: code.trim().toUpperCase() }),

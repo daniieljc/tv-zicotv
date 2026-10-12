@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import { API_V1, fetchWithTimeout } from './http'
+import { apiFetch, rememberApiDomains } from './http'
 
 export interface VersionInfo {
   latest_version_code: number
@@ -22,10 +22,11 @@ export async function checkForUpdate(): Promise<UpdateState> {
   try {
     const [appInfo, res] = await Promise.all([
       CapApp.getInfo(),
-      fetchWithTimeout(`${API_V1}/app/version?platform=tv`),
+      apiFetch('/v1/app/version?platform=tv'),
     ])
     if (!res.ok) return { kind: 'none' }
-    const info: VersionInfo = await res.json()
+    const info: VersionInfo & { api_domains?: string[] } = await res.json()
+    rememberApiDomains(info.api_domains)
     const current = parseInt(appInfo.build, 10) || 0
     if (info.min_version_code > 0 && current < info.min_version_code) return { kind: 'required', info, current: appInfo.version }
     if (info.latest_version_code > current) return { kind: 'optional', info, current: appInfo.version }
@@ -36,7 +37,7 @@ export async function checkForUpdate(): Promise<UpdateState> {
 }
 
 /** versionName de android/app/build.gradle (respaldo fuera del APK). Mantener en sync. */
-export const APP_VERSION = '1.2.3'
+export const APP_VERSION = '1.2.4'
 
 /** Versión visible de la app ("v1.2.0"): la del APK instalado si es nativo. */
 export function useAppVersion(): string {
