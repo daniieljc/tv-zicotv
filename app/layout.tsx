@@ -19,6 +19,8 @@ export const viewport: Viewport = {
   userScalable: true,
 }
 
+import { Presence } from '@/components/tv/presence'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
+        <Presence />
         {children}
       </body>
     </html>

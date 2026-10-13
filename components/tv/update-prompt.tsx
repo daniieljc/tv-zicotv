@@ -16,11 +16,23 @@ let dismissedThisLaunch = false
 export function UpdatePrompt() {
   const [state, setState] = useState<UpdateState>({ kind: 'none' })
 
+  // Al montar, al volver a primer plano y cada 30 min (antes solo al arrancar).
   useEffect(() => {
-    checkForUpdate().then((s) => {
-      if (s.kind === 'optional' && dismissedThisLaunch) return
-      setState(s)
-    })
+    const check = () =>
+      checkForUpdate().then((s) => {
+        if (s.kind === 'optional' && dismissedThisLaunch) return
+        setState(s)
+      })
+    check()
+    const interval = setInterval(check, 30 * 60 * 1000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   // Con la alerta abierta, el mando solo habla con ella: las flechas no mueven
