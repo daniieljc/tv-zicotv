@@ -36,7 +36,8 @@ export function TVHero({ event }: HeroProps) {
       <div className="absolute inset-0 bg-cover bg-center">
         {event.thumbnail_url ? (
           <ProxyImage
-            src={event.thumbnail_url}
+            // A pantalla completa: la original (la API da a las apps la de 888 px).
+            src={event.thumbnail_url.replace(/^(https:\/\/r2\.thesportsdb\.com\/.+)\/medium$/, '$1')}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -53,7 +54,6 @@ export function TVHero({ event }: HeroProps) {
         {event.status === 'live' && (
           <div className="flex items-center gap-2 lg:gap-3 mb-3 lg:mb-6">
             <span className="relative flex h-3 w-3 lg:h-4 lg:w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 lg:h-4 lg:w-4 bg-primary"></span>
             </span>
             <span className="text-sm lg:text-xl font-extrabold text-primary uppercase tracking-widest">

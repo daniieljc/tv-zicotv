@@ -63,7 +63,7 @@ export function UpdatePrompt() {
       className={
         required
           ? 'fixed inset-0 z-[100] flex items-center justify-center bg-background px-10'
-          : 'fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-10 backdrop-blur-sm'
+          : 'fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-10'
       }
     >
       <div

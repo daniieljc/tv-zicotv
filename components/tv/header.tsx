@@ -44,7 +44,6 @@ export function TVHeader({ activeTab, onTabChange, liveCount, sports }: HeaderPr
       {/* Live Indicator */}
       <div className="flex flex-shrink-0 items-center gap-2 lg:gap-4 px-3 py-2 lg:px-6 lg:py-3 rounded-full bg-primary/20 border-2 border-primary/40">
         <span className="relative flex h-3 w-3 lg:h-4 lg:w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 lg:h-4 lg:w-4 bg-primary"></span>
         </span>
         <span className="text-sm lg:text-xl font-bold text-foreground whitespace-nowrap">{liveCount} en vivo</span>

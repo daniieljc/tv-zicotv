@@ -136,7 +136,6 @@ export function WatchContent({ eventId }: WatchContentProps) {
               {event.status === 'live' && (
                 <div className="flex items-center gap-2 mb-3">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
                   </span>
                   <span className="text-xl font-bold text-primary uppercase tracking-wider">
@@ -217,7 +216,7 @@ export function WatchContent({ eventId }: WatchContentProps) {
 
       {/* Controls Hint (antes de reproducir; luego va dentro del panel de fuentes) */}
       {!playing && <div className={cn(
-        'absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl backdrop-blur-sm transition-opacity duration-300',
+        'absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 px-8 py-4 bg-black/70 rounded-xl transition-opacity duration-300',
         !chromeVisible && 'opacity-0 pointer-events-none'
       )}>
         {/* Teclas que existen en un mando de TV (las de teclado, ESC/I, siguen funcionando). */}
@@ -254,7 +253,7 @@ function BackButton({ onBack }: { onBack: () => void }) {
       onClick={onBack}
       className={cn(
         'absolute top-8 left-8 flex items-center gap-3 px-5 py-3 rounded-xl z-50',
-        'bg-black/70 backdrop-blur-sm transition-all duration-200',
+        'bg-black/70 transition-all duration-200',
         'border-2 border-transparent outline-none',
         focused && 'border-primary scale-105 shadow-[0_0_30px_rgba(239,68,68,0.5)]'
       )}

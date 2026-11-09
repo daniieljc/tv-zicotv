@@ -41,11 +41,17 @@ export default function HomePage() {
   useEffect(() => {
     if (!authed) return
     let alive = true
+    let last = ''
     const load = async () => {
       try {
         const d = await fetchEvents()
         if (alive) {
-          setData(d)
+          // Recarga de cada minuto: si nada ha cambiado no se repinta la portada.
+          const sig = JSON.stringify(d)
+          if (sig !== last) {
+            last = sig
+            setData(d)
+          }
           setFailed(false)
         }
       } catch {

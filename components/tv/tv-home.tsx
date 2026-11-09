@@ -105,7 +105,7 @@ export function TVHome({ data }: TVHomeProps) {
           </main>
 
           {/* Ayuda de navegación (solo en pantalla grande / TV) */}
-          <div className="fixed bottom-8 right-8 hidden items-center gap-6 rounded-2xl border border-border bg-secondary/90 px-6 py-4 backdrop-blur-sm md:flex">
+          <div className="fixed bottom-8 right-8 hidden items-center gap-6 rounded-2xl border border-border bg-secondary/90 px-6 py-4 md:flex">
             <div className="flex items-center gap-3 text-muted-foreground">
               <span className="text-lg font-medium">Navegar</span>
               <div className="flex gap-1.5">

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState, ReactNode } from 'react'
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useSyncExternalStore, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 
 // Navegación por mando (D-pad): cada elemento enfocable se registra con una
@@ -28,7 +28,34 @@ interface NavigationActions {
 }
 
 const ActionsContext = createContext<NavigationActions | null>(null)
-const FocusedContext = createContext<string | null>(null)
+
+// El id enfocado va en un almacén con suscripción, no en el valor de un contexto:
+// con un contexto, cada pulsación del mando repintaba TODAS las tarjetas (≈300 en
+// la portada) y en un box de Android TV se notaba cada flecha. Así cada tarjeta
+// solo se repinta cuando gana o pierde el foco.
+interface FocusStore {
+  get: () => string | null
+  set: (id: string) => void
+  subscribe: (fn: () => void) => () => void
+}
+function createFocusStore(): FocusStore {
+  let current: string | null = null
+  const listeners = new Set<() => void>()
+  return {
+    get: () => current,
+    set: (id) => {
+      if (id === current) return
+      current = id
+      listeners.forEach((fn) => fn())
+    },
+    subscribe: (fn) => {
+      listeners.add(fn)
+      return () => listeners.delete(fn)
+    },
+  }
+}
+const FocusedContext = createContext<FocusStore | null>(null)
+const noopSubscribe = () => () => {}
 
 // Último elemento enfocado por pantalla: al volver de un partido el foco vuelve
 // a la tarjeta desde la que se entró, no al principio de la página.
@@ -62,23 +89,33 @@ function scrollToElement(el: FocusableElement) {
       box.scrollTo({ left: el.node.offsetLeft - box.clientWidth / 2 + el.node.clientWidth / 2, behavior: 'smooth' })
     }
   } else {
-    el.node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+    // Vertical (ventana) y horizontal (la fila) por separado: con un solo
+    // scrollIntoView suave, los WebView antiguos de TV solo animaban uno de los dos
+    // y la tarjeta enfocada se quedaba medio fuera de la pantalla.
+    const rect = el.node.getBoundingClientRect()
+    window.scrollTo({ top: window.scrollY + rect.top - window.innerHeight / 2 + rect.height / 2, behavior: 'smooth' })
+    const box = el.node.parentElement
+    if (box && box.scrollWidth > box.clientWidth) {
+      box.scrollTo({ left: el.node.offsetLeft - box.clientWidth / 2 + el.node.clientWidth / 2, behavior: 'smooth' })
+    }
   }
 }
 
 export function TVNavigationProvider({ children, initialFocusKey }: { children: ReactNode; initialFocusKey?: string }) {
   const router = useRouter()
   const elementsRef = useRef<Map<string, FocusableElement>>(new Map())
-  const [focusedId, setFocusedIdState] = useState<string | null>(null)
+  const storeRef = useRef<FocusStore | null>(null)
+  if (!storeRef.current) storeRef.current = createFocusStore()
+  const store = storeRef.current
   const focusedRef = useRef<string | null>(null)
 
   const setFocusedId = useCallback((id: string) => {
     focusedRef.current = id
-    setFocusedIdState(id)
+    store.set(id)
     rememberFocus(id)
     const element = elementsRef.current.get(id)
     if (element) scrollToElement(element)
-  }, [])
+  }, [store])
 
   const actions = useMemo<NavigationActions>(
     () => ({
@@ -109,13 +146,13 @@ export function TVNavigationProvider({ children, initialFocusKey }: { children: 
       const target = recalled && elementsRef.current.has(recalled) ? recalled : initialFocusKey
       if (target) {
         focusedRef.current = target
-        setFocusedIdState(target)
+        store.set(target)
         const el = elementsRef.current.get(target)
         if (el && el.row > 0) scrollToElement(el)
       }
     }, 100)
     return () => clearTimeout(timer)
-  }, [initialFocusKey])
+  }, [initialFocusKey, store])
 
   // Keyboard navigation
   useEffect(() => {
@@ -193,7 +230,7 @@ export function TVNavigationProvider({ children, initialFocusKey }: { children: 
 
   return (
     <ActionsContext.Provider value={actions}>
-      <FocusedContext.Provider value={focusedId}>{children}</FocusedContext.Provider>
+      <FocusedContext.Provider value={store}>{children}</FocusedContext.Provider>
     </ActionsContext.Provider>
   )
 }
@@ -209,7 +246,8 @@ export function setFocus(id: string) {
 
 /** Id del elemento enfocado ahora mismo (null fuera de un TVNavigationProvider). */
 export function useFocusedId(): string | null {
-  return useContext(FocusedContext)
+  const store = useContext(FocusedContext)
+  return useSyncExternalStore(store?.subscribe ?? noopSubscribe, () => store?.get() ?? null, () => null)
 }
 
 // Hook for focusable elements
@@ -225,7 +263,13 @@ export function useFocusable({
   onEnterPress?: () => void
 }) {
   const actions = useContext(ActionsContext)
-  const focusedId = useContext(FocusedContext)
+  const store = useContext(FocusedContext)
+  // Solo cambia (y repinta) cuando ESTE elemento gana o pierde el foco.
+  const focused = useSyncExternalStore(
+    store?.subscribe ?? noopSubscribe,
+    () => store?.get() === focusKey,
+    () => false,
+  )
   const onSelect = useRef(onEnterPress)
   onSelect.current = onEnterPress
   const nodeRef = useRef<HTMLElement | null>(null)
@@ -241,5 +285,5 @@ export function useFocusable({
     [actions, focusKey, row, col],
   )
 
-  return { ref: setRef, focused: focusedId === focusKey }
+  return { ref: setRef, focused }
 }

@@ -11,7 +11,9 @@ interface LeagueRowProps {
 
 export function LeagueRow({ leagueName, events, rowIndex }: LeagueRowProps) {
   return (
-    <div className="mb-6 lg:mb-10">
+    // Las filas fuera de pantalla no se pintan (content-visibility): en la portada
+    // hay ~300 tarjetas y un box de TV no da para pintarlas todas a la vez.
+    <div className="mb-6 lg:mb-10" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 420px' }}>
       {/* League Title */}
       <div className="flex items-center gap-3 lg:gap-5 px-4 md:px-8 lg:px-16 mb-3 lg:mb-6">
         <h3 className="text-lg lg:text-2xl font-bold text-foreground tracking-tight">

@@ -1,10 +1,44 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { useFocusable } from '@/hooks/use-tv-navigation'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/lib/types'
 import { useRouter } from 'next/navigation'
+
+/**
+ * La API ya da las imágenes de thesportsdb reducidas a las apps (escudo 200 px,
+ * miniatura 888 px); en la tarjeta el escudo se pinta a 40 px: basta /tiny (100 px).
+ * Directas, sin el proxy wsrv.nl: para pintar un <img> no hace falta CORS.
+ */
+function cardBadge(url: string): string {
+  return /^https:\/\/r2\.thesportsdb\.com\/.+\/small$/.test(url) ? url.replace(/\/small$/, '/tiny') : url
+}
+
+// Fuera de EventCard: definido dentro, cada repintado de la tarjeta lo trataba
+// como un componente nuevo y volvía a montar (y decodificar) los escudos.
+function TeamBadge({ src, alt }: { src?: string; alt: string }) {
+  const [error, setError] = useState(false)
+  return (
+    <div className="relative w-6 h-6 lg:w-10 lg:h-10 flex-shrink-0">
+      {src && !error ? (
+        <img
+          src={cardBadge(src)}
+          alt={alt}
+          className="w-full h-full object-contain"
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setError(true)}
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center">
+          <span className="text-xs lg:text-sm font-bold text-white">{alt.charAt(0)}</span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface EventCardProps {
   event: Event
@@ -13,10 +47,9 @@ interface EventCardProps {
   col: number
 }
 
-export function EventCard({ event, focusKey, row, col }: EventCardProps) {
+function EventCardInner({ event, focusKey, row, col }: EventCardProps) {
   const router = useRouter()
   const [imgError, setImgError] = useState(false)
-  const [badgeErrors, setBadgeErrors] = useState<Record<string, boolean>>({})
   const [formattedTime, setFormattedTime] = useState<string>('')
 
   const handleSelect = () => {
@@ -41,42 +74,16 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
     }
   }, [event.start_time])
 
-  // Helper to get proxied URL for CORS issues
-  const getProxiedUrl = (url: string): string => {
-    if (url.startsWith('data:') || url.startsWith('/')) return url
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&default=placeholder`
-  }
-
-  // Helper para renderizar los escudos o el fallback
-  const TeamBadge = ({ src, alt, teamKey }: { src?: string; alt: string; teamKey: string }) => (
-      <div className="relative w-6 h-6 lg:w-10 lg:h-10 flex-shrink-0">
-        {src && !badgeErrors[teamKey] ? (
-            <img
-                src={getProxiedUrl(src)}
-                alt={alt}
-                className="w-full h-full object-contain"
-                crossOrigin="anonymous"
-                referrerPolicy="no-referrer"
-                onError={() => setBadgeErrors(prev => ({ ...prev, [teamKey]: true }))}
-            />
-        ) : (
-            <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-xs lg:text-sm font-bold text-white">{alt.charAt(0)}</span>
-            </div>
-        )}
-      </div>
-  )
-
   return (
       <div
           ref={ref as React.Ref<HTMLDivElement>}
           className={cn(
               'relative flex-shrink-0 w-[280px] md:w-[320px] lg:w-[420px] rounded-xl lg:rounded-2xl overflow-hidden cursor-pointer',
-              'transition-all duration-300 ease-out outline-none',
+              // Ligero para la gráfica de un box de TV: solo se anima transform (sin
+              // sombras difuminadas grandes ni transparencia en todas las demás).
+              'transition-transform duration-150 ease-out outline-none',
               'border-2 lg:border-4 border-transparent',
-              'hover:scale-105 hover:z-20 hover:border-primary hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]',
-              focused && 'scale-110 z-20 border-primary shadow-[0_0_60px_rgba(239,68,68,0.5)]',
-              !focused && 'lg:opacity-70'
+              focused && 'scale-105 z-20 border-primary'
           )}
           tabIndex={-1}
           onClick={handleSelect}
@@ -85,10 +92,11 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
         <div className="relative aspect-video bg-secondary">
           {event.thumbnail_url && !imgError ? (
               <img
-                  src={getProxiedUrl(event.thumbnail_url)}
+                  src={event.thumbnail_url}
                   alt={event.title}
                   className="absolute inset-0 w-full h-full object-cover"
-                  crossOrigin="anonymous"
+                  loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   onError={() => setImgError(true)}
               />
@@ -107,7 +115,6 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
           {event.status === 'live' && (
               <div className="absolute top-3 left-3 lg:top-5 lg:left-5 flex items-center gap-2 lg:gap-3 px-2 py-1 lg:px-4 lg:py-2 bg-primary rounded-lg z-10">
             <span className="relative flex h-2 w-2 lg:h-3 lg:w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 lg:h-3 lg:w-3 bg-white"></span>
             </span>
                 <span className="text-xs lg:text-base font-extrabold text-white uppercase tracking-widest">Live</span>
@@ -130,7 +137,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
                 // un ancho máximo fijo los nombres largos se cortaban con "…".
                 <div className="flex items-center gap-2 mb-2 lg:mb-3">
                   <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
-                    <TeamBadge src={event.home_team_badge ?? undefined} alt={event.home_team ?? undefined} teamKey="home" />
+                    <TeamBadge src={event.home_team_badge ?? undefined} alt={event.home_team ?? ''} />
                     <span className="line-clamp-2 min-w-0 break-words text-sm lg:text-lg font-semibold leading-tight text-white">
                       {event.home_team}
                     </span>
@@ -140,7 +147,7 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
                     <span className="line-clamp-2 min-w-0 break-words text-right text-sm lg:text-lg font-semibold leading-tight text-white">
                       {event.away_team}
                     </span>
-                    <TeamBadge src={event.away_team_badge ?? undefined} alt={event.away_team ?? undefined} teamKey="away" />
+                    <TeamBadge src={event.away_team_badge ?? undefined} alt={event.away_team ?? ''} />
                   </div>
                 </div>
             ) : (
@@ -172,3 +179,14 @@ export function EventCard({ event, focusKey, row, col }: EventCardProps) {
       </div>
   )
 }
+
+// Al recargar la lista (cada minuto) los eventos llegan como objetos nuevos: solo
+// se repinta la tarjeta si cambia algo de lo que muestra.
+export const EventCard = memo(EventCardInner, (a, b) =>
+  a.focusKey === b.focusKey && a.row === b.row && a.col === b.col
+  && a.event.id === b.event.id && a.event.status === b.event.status && a.event.viewers === b.event.viewers
+  && a.event.title === b.event.title && a.event.start_time === b.event.start_time
+  && a.event.thumbnail_url === b.event.thumbnail_url && a.event.home_team_badge === b.event.home_team_badge
+  && a.event.away_team_badge === b.event.away_team_badge && a.event.has_stream === b.event.has_stream
+  && a.event.venue === b.event.venue && a.event.home_team === b.event.home_team && a.event.away_team === b.event.away_team,
+)
